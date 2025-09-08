@@ -1,0 +1,52 @@
+uvicorn main_flask:app --reload
+
+
+curl -X GET http://127.0.0.1:5001/Trainers/
+
+
+curl -X GET http://127.0.0.1:5001/Trainers/1/TrainerPokemon/
+
+
+curl -X POST http://127.0.0.1:5001/Trainers/ \
+     -H "Content-Type: application/json" \
+     -d '{"name": "Ash"}'
+
+
+curl -X GET http://127.0.0.1:5001/Trainers/1
+
+
+curl -X PUT http://127.0.0.1:5001/Trainers/1 \
+     -H "Content-Type: application/json" \
+     -d '{"name": "Professor Oak"}'
+
+
+curl -X DELETE http://127.0.0.1:5001/Trainers/1
+
+
+curl -X POST http://127.0.0.1:5001/Trainers/1/TrainerPokemon/ \
+     -H "Content-Type: application/json" \
+     -d '{
+           "trainer_id": 1,
+           "pokemon_id": 25,
+           "nickname": "Pikachu",
+           "level": 50,
+         }'
+
+
+curl -X GET http://127.0.0.1:5001/Trainers/1/TrainerPokemon/1
+
+
+curl -X PUT http://127.0.0.1:5001/Trainers/1/TrainerPokemon/1 \
+     -H "Content-Type: application/json" \
+     -d '{
+           "trainer_id": 1,
+           "pokemon_id": 25,
+           "nickname": "Raichu",
+           "level": 55,
+         }'
+
+
+curl -X DELETE http://127.0.0.1:5001/Trainers/1/TrainerPokemon/1
+
+
+curl -v http://127.0.0.1:5001/Trainers/
