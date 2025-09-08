@@ -65,6 +65,10 @@ CREATE TABLE Moves (
     power INT,
     accuracy INT CHECK
 (accuracy >= 0 AND accuracy <= 100),
+    pp INT CHECK
+(pp > 0),
+    effect VARCHAR
+(255),
     FOREIGN KEY
 (type) REFERENCES PokemonType
 (type_name)
@@ -75,6 +79,8 @@ CREATE TABLE PokemonMoves (
     pokemon_id INT NOT NULL,
     move_id INT NOT NULL,
     level_learned INT,
+    pp INT CHECK
+(pp > 0),
     FOREIGN KEY
 (pokemon_id) REFERENCES Pokemon
 (id),
@@ -131,6 +137,7 @@ CREATE TABLE TrainerPokemon (
     ev_special INT DEFAULT 0 CHECK
 (ev_special BETWEEN 0 AND 65535),
     FOREIGN KEY
+    move_id
 (trainer_id) REFERENCES Trainers
 (id) ON
 DELETE CASCADE,
