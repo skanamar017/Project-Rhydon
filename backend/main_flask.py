@@ -66,6 +66,22 @@ def create_team_pokemon(team_id):
         # Ensure team_id is set in the data
         data['team_id'] = team_id
         
+        # Validate Individual Values (IVs) - Generation 1 uses 0-15 range
+        iv_fields = ['iv_attack', 'iv_defense', 'iv_speed', 'iv_special']
+        for iv_field in iv_fields:
+            if iv_field in data:
+                iv_value = data[iv_field]
+                if not isinstance(iv_value, int) or iv_value < 0 or iv_value > 15:
+                    return jsonify({"error": f"{iv_field} must be between 0 and 15"}), 400
+        
+        # Validate Effort Values (EVs) - Generation 1 uses 0-65535 range
+        ev_fields = ['ev_hp', 'ev_attack', 'ev_defense', 'ev_speed', 'ev_special']
+        for ev_field in ev_fields:
+            if ev_field in data:
+                ev_value = data[ev_field]
+                if not isinstance(ev_value, int) or ev_value < 0 or ev_value > 65535:
+                    return jsonify({"error": f"{ev_field} must be between 0 and 65535"}), 400
+        
         # Create TeamPokemon object
         tp = TeamPokemon(**data)
         created = db.create_team_pokemon(tp)
@@ -132,10 +148,40 @@ def update_team_pokemon(team_id, tp_id):
         
         # Update only the fields that are provided
         update_data = existing_tp.model_dump()
+        
+        # Basic fields
         if 'nickname' in data:
             update_data['nickname'] = data['nickname']
         if 'level' in data:
             update_data['level'] = data['level']
+        if 'status' in data:
+            update_data['status'] = data['status']
+        if 'current_hp' in data:
+            update_data['current_hp'] = data['current_hp']
+        
+        # Individual Values (IVs) - validate range 0-15
+        iv_fields = ['iv_attack', 'iv_defense', 'iv_speed', 'iv_special']
+        for iv_field in iv_fields:
+            if iv_field in data:
+                iv_value = data[iv_field]
+                if not isinstance(iv_value, int) or iv_value < 0 or iv_value > 15:
+                    return jsonify({"error": f"{iv_field} must be between 0 and 15"}), 400
+                update_data[iv_field] = iv_value
+        
+        # Effort Values (EVs) - validate range 0-65535
+        ev_fields = ['ev_hp', 'ev_attack', 'ev_defense', 'ev_speed', 'ev_special']
+        for ev_field in ev_fields:
+            if ev_field in data:
+                ev_value = data[ev_field]
+                if not isinstance(ev_value, int) or ev_value < 0 or ev_value > 65535:
+                    return jsonify({"error": f"{ev_field} must be between 0 and 65535"}), 400
+                update_data[ev_field] = ev_value
+        
+        # Move slots
+        move_fields = ['move1_id', 'move2_id', 'move3_id', 'move4_id']
+        for move_field in move_fields:
+            if move_field in data:
+                update_data[move_field] = data[move_field]
         
         # Create updated TeamPokemon object with all required fields
         tp = TeamPokemon(**update_data)
@@ -371,6 +417,94 @@ def get_move_details(move_id: int):
         return jsonify({"error": "Move not found"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 400
+
+@app.route("/Teams/<int:team_id>/TeamPokemon/<int:tp_id>/stats", methods=["PUT"])
+def update_pokemon_stats(team_id: int, tp_id: int):
+    """Update Pokemon EVs and IVs"""
+    try:
+        data = request.get_json()
+        print(f"[DEBUG] Updating stats for Pokemon {tp_id} with data: {data}")
+        
+        # Get the existing trainer pokemon first
+        existing_tp = db.get_team_pokemon(tp_id)
+        if not existing_tp:
+            return jsonify({"error": "TeamPokemon not found"}), 404
+        
+        update_data = existing_tp.model_dump()
+        
+        # Validate and update Individual Values (IVs) - Generation 1 uses 0-15 range
+        if 'ivs' in data:
+            ivs = data['ivs']
+            iv_fields = ['attack', 'defense', 'speed', 'special']
+            for iv_field in iv_fields:
+                if iv_field in ivs:
+                    iv_value = ivs[iv_field]
+                    if not isinstance(iv_value, int) or iv_value < 0 or iv_value > 15:
+                        return jsonify({"error": f"IV {iv_field} must be between 0 and 15"}), 400
+                    update_data[f'iv_{iv_field}'] = iv_value
+        
+        # Validate and update Effort Values (EVs) - Generation 1 uses 0-65535 range
+        if 'evs' in data:
+            evs = data['evs']
+            ev_fields = ['hp', 'attack', 'defense', 'speed', 'special']
+            for ev_field in ev_fields:
+                if ev_field in evs:
+                    ev_value = evs[ev_field]
+                    if not isinstance(ev_value, int) or ev_value < 0 or ev_value > 65535:
+                        return jsonify({"error": f"EV {ev_field} must be between 0 and 65535"}), 400
+                    update_data[f'ev_{ev_field}'] = ev_value
+        
+        # Create updated TeamPokemon object
+        tp = TeamPokemon(**update_data)
+        updated = db.update_team_pokemon(tp_id, tp)
+        
+        if updated:
+            print(f"[DEBUG] Successfully updated Pokemon stats: {updated}")
+            return jsonify({
+                "message": "Pokemon stats updated successfully",
+                "pokemon": updated.model_dump()
+            }), 200
+        else:
+            return jsonify({"error": "Failed to update Pokemon stats"}), 500
+            
+    except Exception as e:
+        print(f"[ERROR] Failed to update Pokemon stats: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/Teams/<int:team_id>/TeamPokemon/<int:tp_id>/stats", methods=["GET"])
+def get_pokemon_stats(team_id: int, tp_id: int):
+    """Get Pokemon EVs and IVs in a structured format"""
+    try:
+        tp = db.get_team_pokemon(tp_id)
+        if not tp:
+            return jsonify({"error": "TeamPokemon not found"}), 404
+        
+        stats_data = {
+            "ivs": {
+                "attack": tp.iv_attack,
+                "defense": tp.iv_defense,
+                "speed": tp.iv_speed,
+                "special": tp.iv_special
+            },
+            "evs": {
+                "hp": tp.ev_hp,
+                "attack": tp.ev_attack,
+                "defense": tp.ev_defense,
+                "speed": tp.ev_speed,
+                "special": tp.ev_special
+            },
+            "level": tp.level,
+            "nickname": tp.nickname,
+            "pokemon_id": tp.pokemon_id
+        }
+        
+        return jsonify(stats_data), 200
+        
+    except Exception as e:
+        print(f"[ERROR] Failed to get Pokemon stats: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True, port=5001)
