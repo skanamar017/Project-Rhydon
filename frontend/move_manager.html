@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokemon Team & Move Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .team-section {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+        }
+        
+        .pokemon-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f9f9f9;
+        }
+        
+        .pokemon-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            font-size: 18px;
+            color: #333;
+        }
+        
+        .pokemon-details {
+            margin-top: 10px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 14px;
+        }
+        
+        .moves-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+        }
+        
+        .move-slot {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+            padding: 8px;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        
+        .move-slot.empty {
+            background: #f0f0f0;
+            color: #666;
+            font-style: italic;
+        }
+        
+        .move-info {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 10px;
+            font-size: 12px;
+        }
+        
+        .move-name {
+            font-weight: bold;
+        }
+        
+        .move-type {
+            text-align: center;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: white;
+            font-size: 10px;
+        }
+        
+        .available-moves {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+        }
+        
+        .available-move {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+            gap: 10px;
+            font-size: 12px;
+            align-items: center;
+        }
+        
+        .available-move:hover {
+            background: #e3f2fd;
+        }
+        
+        .available-move.selected {
+            background: #1976d2;
+            color: white;
+        }
+        
+        .level-info {
+            font-size: 10px;
+            color: #666;
+            text-align: center;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-primary {
+            background: #1976d2;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #1565c0;
+        }
+        
+        .btn-secondary {
+            background: #666;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #555;
+        }
+        
+        .btn-danger {
+            background: #d32f2f;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c62828;
+        }
+        
+        .error {
+            color: #d32f2f;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        
+        .success {
+            color: #388e3c;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 800px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <h1>Pokemon Team & Move Manager</h1>
+    
+    <div class="container">
+        <h2>Team Selection</h2>
+        <select id="teamSelect">
+            <option value="">Select a team...</option>
+        </select>
+        <button onclick="loadTeams()" class="btn-secondary">Refresh Teams</button>
+    </div>
+    
+    <div class="container team-section" id="teamDetails" style="display: none;">
+        <div>
+            <h3 id="teamName">Team Name</h3>
+            <div id="teamPokemon"></div>
+        </div>
+        
+        <div>
+            <h3>Pokemon Details & Move Manager</h3>
+            <div id="pokemonDetails"></div>
+        </div>
+    </div>
+    
+    <!-- Move Selection Modal -->
+    <div id="moveModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeMoveModal()">&times;</span>
+            <h2>Manage Moves for <span id="modalPokemonName"></span> (Level <span id="modalPokemonLevel"></span>)</h2>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <h3>Current Moves</h3>
+                    <div id="currentMoves"></div>
+                    
+                    <div class="button-group">
+                        <button onclick="saveMoves()" class="btn-primary">Save Changes</button>
+                        <button onclick="resetMoves()" class="btn-secondary">Reset</button>
+                        <button onclick="closeMoveModal()" class="btn-danger">Cancel</button>
+                    </div>
+                    <div id="moveUpdateResult"></div>
+                </div>
+                
+                <div>
+                    <h3>Available Moves</h3>
+                    <p>Click moves to select/deselect them for your Pokemon:</p>
+                    <div id="availableMoves" class="available-moves"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTeamId = null;
+        let currentPokemonId = null;
+        let currentTeamPokemonId = null;
+        let currentLevel = 1;
+        let selectedMoves = [];
+        let availableMovesData = [];
+        
+        const BASE_URL = 'http://127.0.0.1:5001';
+        
+        // Type colors for moves
+        const typeColors = {
+            'Normal': '#A8A878',
+            'Fire': '#F08030',
+            'Water': '#6890F0',
+            'Electric': '#F8D030',
+            'Grass': '#78C850',
+            'Ice': '#98D8D8',
+            'Fighting': '#C03028',
+            'Poison': '#A040A0',
+            'Ground': '#E0C068',
+            'Flying': '#A890F0',
+            'Psychic': '#F85888',
+            'Bug': '#A8B820',
+            'Rock': '#B8A038',
+            'Ghost': '#705898',
+            'Dragon': '#7038F8',
+            'Dark': '#705848',
+            'Steel': '#B8B8D0',
+            'Fairy': '#EE99AC'
+        };
+        
+        async function loadTeams() {
+            try {
+                const response = await fetch(`${BASE_URL}/Teams/`);
+                const teams = await response.json();
+                
+                const teamSelect = document.getElementById('teamSelect');
+                teamSelect.innerHTML = '<option value="">Select a team...</option>';
+                
+                teams.forEach(team => {
+                    const option = document.createElement('option');
+                    option.value = team.id;
+                    option.textContent = team.name;
+                    teamSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading teams:', error);
+            }
+        }
+        
+        async function loadTeamDetails(teamId) {
+            try {
+                currentTeamId = teamId;
+                
+                // Load team info
+                const teamResponse = await fetch(`${BASE_URL}/Teams/${teamId}`);
+                const team = await teamResponse.json();
+                document.getElementById('teamName').textContent = team.name;
+                
+                // Load team Pokemon
+                const pokemonResponse = await fetch(`${BASE_URL}/Teams/${teamId}/TeamPokemon/`);
+                const pokemonList = await pokemonResponse.json();
+                
+                displayTeamPokemon(pokemonList);
+                document.getElementById('teamDetails').style.display = 'grid';
+                
+                if (pokemonList.length > 0) {
+                    selectPokemon(pokemonList[0]);
+                }
+            } catch (error) {
+                console.error('Error loading team details:', error);
+            }
+        }
+        
+        function displayTeamPokemon(pokemonList) {
+            const container = document.getElementById('teamPokemon');
+            container.innerHTML = '';
+            
+            pokemonList.forEach(pokemon => {
+                const card = document.createElement('div');
+                card.className = 'pokemon-card';
+                card.style.cursor = 'pointer';
+                card.onclick = () => selectPokemon(pokemon);
+                
+                card.innerHTML = `
+                    <div class="pokemon-header">
+                        ${pokemon.nickname || pokemon.pokemon_name}
+                        <span>Lv. ${pokemon.level}</span>
+                    </div>
+                    <div class="pokemon-details">
+                        <div>Species: ${pokemon.pokemon_name}</div>
+                        <div>Type: ${pokemon.type1}${pokemon.type2 ? '/' + pokemon.type2 : ''}</div>
+                        <div>HP: ${pokemon.calculated_hp}</div>
+                        <div>Status: ${pokemon.status}</div>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+        
+        async function selectPokemon(pokemon) {
+            currentPokemonId = pokemon.pokemon_id;
+            currentTeamPokemonId = pokemon.id;
+            currentLevel = pokemon.level;
+            
+            // Display detailed Pokemon info
+            const container = document.getElementById('pokemonDetails');
+            
+            const moveSlots = [
+                { id: pokemon.move1_id, slot: 1 },
+                { id: pokemon.move2_id, slot: 2 },
+                { id: pokemon.move3_id, slot: 3 },
+                { id: pokemon.move4_id, slot: 4 }
+            ];
+            
+            let movesHtml = '';
+            for (const moveSlot of moveSlots) {
+                if (moveSlot.id) {
+                    try {
+                        const moveResponse = await fetch(`${BASE_URL}/moves/${moveSlot.id}`);
+                        const move = await moveResponse.json();
+                        
+                        movesHtml += `
+                            <div class="move-slot">
+                                <div class="move-info">
+                                    <span class="move-name">${move.name}</span>
+                                    <span class="move-type" style="background-color: ${typeColors[move.type] || '#666'}">${move.type}</span>
+                                    <span>Power: ${move.power || '-'}</span>
+                                    <span>PP: ${move.pp}</span>
+                                </div>
+                            </div>
+                        `;
+                    } catch (error) {
+                        movesHtml += `
+                            <div class="move-slot">
+                                <div class="move-info">
+                                    <span class="move-name">Unknown Move #${moveSlot.id}</span>
+                                    <span>-</span>
+                                    <span>-</span>
+                                    <span>-</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                } else {
+                    movesHtml += `
+                        <div class="move-slot empty">
+                            <span>Empty Slot ${moveSlot.slot}</span>
+                        </div>
+                    `;
+                }
+            }
+            
+            container.innerHTML = `
+                <div class="pokemon-card">
+                    <div class="pokemon-header">
+                        ${pokemon.nickname || pokemon.pokemon_name}
+                        <span>Level ${pokemon.level}</span>
+                    </div>
+                    
+                    <div class="pokemon-details">
+                        <div><strong>Species:</strong> ${pokemon.pokemon_name}</div>
+                        <div><strong>Type:</strong> ${pokemon.type1}${pokemon.type2 ? '/' + pokemon.type2 : ''}</div>
+                        <div><strong>HP:</strong> ${pokemon.calculated_hp}</div>
+                        <div><strong>Attack:</strong> ${pokemon.calculated_attack}</div>
+                        <div><strong>Defense:</strong> ${pokemon.calculated_defense}</div>
+                        <div><strong>Speed:</strong> ${pokemon.calculated_speed}</div>
+                        <div><strong>Special:</strong> ${pokemon.calculated_special}</div>
+                        <div><strong>Status:</strong> ${pokemon.status}</div>
+                    </div>
+                    
+                    <div class="moves-section">
+                        <h4>Current Moves:</h4>
+                        ${movesHtml}
+                        
+                        <div class="button-group">
+                            <button onclick="openMoveModal()" class="btn-primary">Manage Moves</button>
+                            <button onclick="showAvailableMoves()" class="btn-secondary">View All Available Moves</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        async function openMoveModal() {
+            document.getElementById('modalPokemonName').textContent = 
+                document.querySelector('.pokemon-header').textContent.split('Level')[0].trim();
+            document.getElementById('modalPokemonLevel').textContent = currentLevel;
+            
+            // Load current moves
+            const teamPokemonResponse = await fetch(`${BASE_URL}/Teams/${currentTeamId}/TeamPokemon/`);
+            const teamPokemon = await teamPokemonResponse.json();
+            const currentPokemon = teamPokemon.find(p => p.id === currentTeamPokemonId);
+            
+            selectedMoves = [
+                currentPokemon.move1_id,
+                currentPokemon.move2_id,
+                currentPokemon.move3_id,
+                currentPokemon.move4_id
+            ].filter(id => id !== null);
+            
+            await loadAvailableMoves();
+            updateCurrentMovesDisplay();
+            updateAvailableMovesDisplay();
+            
+            document.getElementById('moveModal').style.display = 'block';
+        }
+        
+        function closeMoveModal() {
+            document.getElementById('moveModal').style.display = 'none';
+        }
+        
+        async function loadAvailableMoves() {
+            try {
+                const response = await fetch(`${BASE_URL}/pokemon/${currentPokemonId}/available_moves?level=${currentLevel}`);
+                availableMovesData = await response.json();
+            } catch (error) {
+                console.error('Error loading available moves:', error);
+                availableMovesData = [];
+            }
+        }
+        
+        function updateCurrentMovesDisplay() {
+            const container = document.getElementById('currentMoves');
+            container.innerHTML = '';
+            
+            for (let i = 0; i < 4; i++) {
+                const moveId = selectedMoves[i];
+                const moveSlot = document.createElement('div');
+                moveSlot.className = 'move-slot' + (moveId ? '' : ' empty');
+                
+                if (moveId) {
+                    const move = availableMovesData.find(m => m.move_id === moveId);
+                    if (move) {
+                        moveSlot.innerHTML = `
+                            <div class="move-info">
+                                <span class="move-name">${move.name}</span>
+                                <span class="move-type" style="background-color: ${typeColors[move.type] || '#666'}">${move.type}</span>
+                                <span>Power: ${move.power || '-'}</span>
+                                <span>PP: ${move.pp}</span>
+                            </div>
+                            <button onclick="removeMove(${i})" class="btn-danger" style="margin-left: 10px;">Remove</button>
+                        `;
+                    }
+                } else {
+                    moveSlot.innerHTML = `<span>Empty Slot ${i + 1}</span>`;
+                }
+                
+                container.appendChild(moveSlot);
+            }
+        }
+        
+        function updateAvailableMovesDisplay() {
+            const container = document.getElementById('availableMoves');
+            container.innerHTML = '';
+            
+            availableMovesData.forEach(move => {
+                const moveDiv = document.createElement('div');
+                moveDiv.className = 'available-move';
+                if (selectedMoves.includes(move.move_id)) {
+                    moveDiv.classList.add('selected');
+                }
+                
+                moveDiv.onclick = () => toggleMove(move.move_id);
+                
+                moveDiv.innerHTML = `
+                    <span class="move-name">${move.name}</span>
+                    <span class="move-type" style="background-color: ${typeColors[move.type] || '#666'}">${move.type}</span>
+                    <span>Power: ${move.power || '-'}</span>
+                    <span>PP: ${move.pp}</span>
+                    <span class="level-info">Level ${move.level_learned}</span>
+                `;
+                
+                container.appendChild(moveDiv);
+            });
+        }
+        
+        function toggleMove(moveId) {
+            const index = selectedMoves.indexOf(moveId);
+            if (index > -1) {
+                selectedMoves.splice(index, 1);
+            } else if (selectedMoves.length < 4) {
+                selectedMoves.push(moveId);
+            } else {
+                alert('Pokemon can only have 4 moves maximum. Remove a move first.');
+                return;
+            }
+            
+            updateCurrentMovesDisplay();
+            updateAvailableMovesDisplay();
+        }
+        
+        function removeMove(slotIndex) {
+            if (slotIndex < selectedMoves.length) {
+                selectedMoves.splice(slotIndex, 1);
+            }
+            updateCurrentMovesDisplay();
+            updateAvailableMovesDisplay();
+        }
+        
+        async function saveMoves() {
+            try {
+                const response = await fetch(`${BASE_URL}/Teams/${currentTeamId}/TeamPokemon/${currentTeamPokemonId}/moves`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        move_ids: selectedMoves
+                    })
+                });
+                
+                const result = await response.json();
+                const resultDiv = document.getElementById('moveUpdateResult');
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = '<div class="success">Moves updated successfully!</div>';
+                    // Refresh the main display
+                    loadTeamDetails(currentTeamId);
+                    setTimeout(() => {
+                        closeMoveModal();
+                    }, 1500);
+                } else {
+                    resultDiv.innerHTML = `<div class="error">Error: ${result.error}</div>`;
+                    if (result.details) {
+                        result.details.forEach(detail => {
+                            resultDiv.innerHTML += `<div class="error">• ${detail}</div>`;
+                        });
+                    }
+                }
+            } catch (error) {
+                document.getElementById('moveUpdateResult').innerHTML = 
+                    `<div class="error">Network error: ${error.message}</div>`;
+            }
+        }
+        
+        function resetMoves() {
+            // Reset to original moves
+            openMoveModal();
+        }
+        
+        async function showAvailableMoves() {
+            try {
+                const response = await fetch(`${BASE_URL}/pokemon/${currentPokemonId}/moves_by_level`);
+                const movesByLevel = await response.json();
+                
+                let html = '<h3>All Moves by Level:</h3>';
+                Object.keys(movesByLevel).sort((a, b) => parseInt(a) - parseInt(b)).forEach(level => {
+                    html += `<h4>Level ${level}:</h4><ul>`;
+                    movesByLevel[level].forEach(move => {
+                        const available = parseInt(level) <= currentLevel ? ' ✓' : ' (too high level)';
+                        html += `<li>${move.name} (${move.type}) - Power: ${move.power || '-'}, PP: ${move.pp}${available}</li>`;
+                    });
+                    html += '</ul>';
+                });
+                
+                alert(html); // Simple alert for now, could be made into a modal
+            } catch (error) {
+                console.error('Error loading moves by level:', error);
+            }
+        }
+        
+        // Event listeners
+        document.getElementById('teamSelect').addEventListener('change', function() {
+            const teamId = this.value;
+            if (teamId) {
+                loadTeamDetails(teamId);
+            } else {
+                document.getElementById('teamDetails').style.display = 'none';
+            }
+        });
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('moveModal');
+            if (event.target === modal) {
+                closeMoveModal();
+            }
+        }
+        
+        // Initialize the page
+        loadTeams();
+    </script>
+</body>
+</html>

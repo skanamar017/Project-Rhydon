@@ -436,27 +436,126 @@ class PokemonDatabase:
             result['type2'] = pokemon_row['type2']
             
         return result
-@app.route("/pokemon/<int:pokemon_id>/base_stats", methods=["GET"])
-def get_pokemon_base_stats_route(pokemon_id: int):
-    """Get base stats for a Pokémon species"""
-    base_stats = db.get_pokemon_base_stats(pokemon_id)
-    if base_stats:
-        return jsonify(base_stats), 200
-    return jsonify({"error": "Pokémon not found"}), 404
 
-@app.route("/calculate_stats", methods=["POST"])
-def calculate_stats_endpoint():
-    """Calculate stats given base stats, level, IVs, and EVs"""
-    data = request.get_json()
-    required_fields = ['base_stats', 'level', 'ivs', 'evs']
-    
-    if not data or not all(field in data for field in required_fields):
-        return jsonify({"error": "Required fields: base_stats, level, ivs, evs"}), 400
-    
-    try:
-        stats = Gen1StatCalculator.calculate_all_stats(
-            data['base_stats'], data['level'], data['ivs'], data['evs']
-        )
-        return jsonify(stats.dict()), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
+    # Move Management Methods
+    def get_pokemon_available_moves(self, pokemon_id: int, max_level: int) -> List[dict]:
+        """Get all moves a Pokemon can learn up to a specific level"""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.execute("""
+                SELECT DISTINCT pm.move_id, m.name, m.type, m.power, m.accuracy, 
+                       m.pp, pm.level_learned, m.effect
+                FROM PokemonMoves pm
+                JOIN Moves m ON pm.move_id = m.id
+                WHERE pm.pokemon_id = ? AND pm.level_learned <= ?
+                ORDER BY pm.level_learned, m.name
+            """, (pokemon_id, max_level))
+            
+            moves = []
+            for row in cursor.fetchall():
+                moves.append({
+                    'move_id': row['move_id'],
+                    'name': row['name'],
+                    'type': row['type'],
+                    'power': row['power'],
+                    'accuracy': row['accuracy'],
+                    'pp': row['pp'],
+                    'level_learned': row['level_learned'],
+                    'effect_description': row['effect']
+                })
+            return moves
+
+    def get_pokemon_moves_by_level(self, pokemon_id: int) -> dict:
+        """Get all moves a Pokemon learns grouped by level"""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.execute("""
+                SELECT DISTINCT pm.move_id, m.name, m.type, m.power, m.accuracy, 
+                       m.pp, pm.level_learned, m.effect
+                FROM PokemonMoves pm
+                JOIN Moves m ON pm.move_id = m.id
+                WHERE pm.pokemon_id = ?
+                ORDER BY pm.level_learned, m.name
+            """, (pokemon_id,))
+            
+            moves_by_level = {}
+            for row in cursor.fetchall():
+                level = row['level_learned']
+                if level not in moves_by_level:
+                    moves_by_level[level] = []
+                
+                moves_by_level[level].append({
+                    'move_id': row['move_id'],
+                    'name': row['name'],
+                    'type': row['type'],
+                    'power': row['power'],
+                    'accuracy': row['accuracy'],
+                    'pp': row['pp'],
+                    'effect_description': row['effect']
+                })
+            return moves_by_level
+
+    def validate_pokemon_moves(self, pokemon_id: int, level: int, move_ids: List[int]) -> dict:
+        """Validate that a Pokemon can learn the specified moves at their current level"""
+        if len(move_ids) > 4:
+            return {"valid": False, "errors": ["Pokemon can only have 4 moves maximum"]}
+        
+        # Remove None values and duplicates
+        move_ids = list(set([mid for mid in move_ids if mid is not None]))
+        
+        available_moves = self.get_pokemon_available_moves(pokemon_id, level)
+        available_move_ids = {move['move_id'] for move in available_moves}
+        
+        errors = []
+        for move_id in move_ids:
+            if move_id not in available_move_ids:
+                move_name = self.get_move_name(move_id)
+                errors.append(f"Pokemon cannot learn {move_name} at level {level}")
+        
+        return {"valid": len(errors) == 0, "errors": errors}
+
+    def get_move_name(self, move_id: int) -> str:
+        """Get move name by ID"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute("SELECT name FROM Moves WHERE id = ?", (move_id,))
+            result = cursor.fetchone()
+            return result[0] if result else f"Move #{move_id}"
+
+    def update_team_pokemon_moves(self, tp_id: int, move_ids: List[int]) -> Optional[TeamPokemon]:
+        """Update moves for a TeamPokemon"""
+        # Pad move_ids to have exactly 4 elements (with None for empty slots)
+        while len(move_ids) < 4:
+            move_ids.append(None)
+        move_ids = move_ids[:4]  # Ensure max 4 moves
+        
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("""
+                UPDATE TeamPokemon 
+                SET move1_id = ?, move2_id = ?, move3_id = ?, move4_id = ?
+                WHERE id = ?
+            """, (move_ids[0], move_ids[1], move_ids[2], move_ids[3], tp_id))
+            conn.commit()
+        
+        return self.get_team_pokemon(tp_id)
+
+    def get_move_details(self, move_id: int) -> Optional[dict]:
+        """Get detailed information about a move"""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.execute("""
+                SELECT id, name, type, power, accuracy, pp, effect
+                FROM Moves WHERE id = ?
+            """, (move_id,))
+            
+            row = cursor.fetchone()
+            if row:
+                return {
+                    'id': row['id'],
+                    'name': row['name'],
+                    'type': row['type'],
+                    'power': row['power'],
+                    'accuracy': row['accuracy'],
+                    'pp': row['pp'],
+                    'effect_description': row['effect']
+                }
+            return None

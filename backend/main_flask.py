@@ -304,5 +304,73 @@ def calculate_stats_endpoint():
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
+# Move Management Endpoints
+@app.route("/pokemon/<int:pokemon_id>/available_moves", methods=["GET"])
+def get_available_moves(pokemon_id: int):
+    """Get all moves a Pokémon can learn up to a specific level"""
+    level = request.args.get('level', type=int)
+    if not level:
+        return jsonify({"error": "Level parameter is required"}), 400
+    
+    try:
+        moves = db.get_pokemon_available_moves(pokemon_id, level)
+        return jsonify(moves), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@app.route("/pokemon/<int:pokemon_id>/moves_by_level", methods=["GET"])
+def get_moves_by_level(pokemon_id: int):
+    """Get all moves a Pokémon learns grouped by level"""
+    try:
+        moves = db.get_pokemon_moves_by_level(pokemon_id)
+        return jsonify(moves), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@app.route("/Teams/<int:team_id>/TeamPokemon/<int:tp_id>/moves", methods=["PUT"])
+def update_pokemon_moves(team_id: int, tp_id: int):
+    """Update moves for a TeamPokemon, with level validation"""
+    data = request.get_json()
+    
+    try:
+        # Get current TeamPokemon to check level
+        team_pokemon = db.get_team_pokemon(tp_id)
+        if not team_pokemon:
+            return jsonify({"error": "TeamPokemon not found"}), 404
+            
+        # Validate moves against Pokemon's level and movepool
+        validation_result = db.validate_pokemon_moves(
+            team_pokemon.pokemon_id, 
+            team_pokemon.level, 
+            data.get('move_ids', [])
+        )
+        
+        if not validation_result["valid"]:
+            return jsonify({
+                "error": "Invalid moves", 
+                "details": validation_result["errors"]
+            }), 400
+        
+        # Update moves
+        updated = db.update_team_pokemon_moves(tp_id, data.get('move_ids', []))
+        if updated:
+            return jsonify(updated.model_dump()), 200
+        else:
+            return jsonify({"error": "Failed to update moves"}), 500
+            
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@app.route("/moves/<int:move_id>", methods=["GET"])
+def get_move_details(move_id: int):
+    """Get detailed information about a move"""
+    try:
+        move = db.get_move_details(move_id)
+        if move:
+            return jsonify(move), 200
+        return jsonify({"error": "Move not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
 if __name__ == "__main__":
     app.run(debug=True, port=5001)
