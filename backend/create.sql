@@ -133,7 +133,7 @@ CREATE TABLE TeamPokemon (
     status VARCHAR
 (20),
     -- Move slots (Generation 1 allows 4 moves max)
-    move1_id INT NOT NULL,
+    move1_id INT,
     move2_id INT,
     move3_id INT,
     move4_id INT,
@@ -143,7 +143,7 @@ CREATE TABLE TeamPokemon (
 DELETE CASCADE,
     FOREIGN KEY (pokemon_id)
 REFERENCES Pokemon
-(id),
+(pokedex_number),
     FOREIGN KEY
 (move1_id)
 REFERENCES Moves

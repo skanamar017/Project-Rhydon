@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basic Pokemon Team Manager - Test</title>
+</head>
+<body>
+    <h1>Pokemon Team Manager - Basic Test Frontend</h1>
+    
+    <h2>Create New Team</h2>
+    <form id="createTeamForm">
+        <label for="teamName">Team Name:</label>
+        <input type="text" id="teamName" name="teamName" required>
+        <button type="submit">Create Team</button>
+    </form>
+    <div id="createTeamResult"></div>
+    
+    <hr>
+    
+    <h2>Add Pokemon to Team</h2>
+    <form id="addPokemonForm">
+        <label for="teamSelect">Select Team:</label>
+        <select id="teamSelect" name="teamSelect" required>
+            <option value="">Choose a team</option>
+        </select>
+        <br><br>
+        
+        <label for="pokemonSelect">Select Pokemon:</label>
+        <select id="pokemonSelect" name="pokemonSelect" required>
+            <option value="">Choose a Pokemon</option>
+        </select>
+        <br><br>
+        
+        <label for="pokemonLevel">Level (1-100):</label>
+        <input type="number" id="pokemonLevel" name="pokemonLevel" min="1" max="100" value="50" required>
+        <br><br>
+        
+        <label for="pokemonNickname">Nickname (optional):</label>
+        <input type="text" id="pokemonNickname" name="pokemonNickname">
+        <br><br>
+        
+        <button type="submit">Add Pokemon</button>
+    </form>
+    <div id="addPokemonResult"></div>
+    
+    <hr>
+    
+    <h2>Teams</h2>
+    <button id="refreshTeams">Refresh Teams</button>
+    <div id="teamsDisplay"></div>
+    
+    <hr>
+    
+    <h2>Debug Information</h2>
+    <button id="testConnection">Test API Connection</button>
+    <div id="debugInfo"></div>
+
+    <script>
+        const API_BASE = 'http://127.0.0.1:5001';
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTeams();
+            loadPokemonList();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            document.getElementById('createTeamForm').addEventListener('submit', handleCreateTeam);
+            document.getElementById('addPokemonForm').addEventListener('submit', handleAddPokemon);
+            document.getElementById('refreshTeams').addEventListener('click', loadTeams);
+            document.getElementById('testConnection').addEventListener('click', testConnection);
+        }
+
+        async function makeRequest(url, options = {}) {
+            try {
+                console.log('Making request to:', url, options);
+                const response = await fetch(url, options);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || `HTTP error! status: ${response.status}`);
+                }
+                
+                return data;
+            } catch (error) {
+                console.error('Request failed:', error);
+                throw error;
+            }
+        }
+
+        async function handleCreateTeam(event) {
+            event.preventDefault();
+            const teamName = document.getElementById('teamName').value.trim();
+            const resultDiv = document.getElementById('createTeamResult');
+            
+            if (!teamName) {
+                resultDiv.innerHTML = 'Error: Please enter a team name';
+                return;
+            }
+
+            try {
+                const team = await makeRequest(`${API_BASE}/Teams/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name: teamName })
+                });
+
+                resultDiv.innerHTML = `Success: Team "${team.name}" created with ID ${team.id}`;
+                document.getElementById('teamName').value = '';
+                loadTeams();
+                updateTeamSelect();
+            } catch (error) {
+                resultDiv.innerHTML = `Error: ${error.message}`;
+            }
+        }
+
+        async function handleAddPokemon(event) {
+            event.preventDefault();
+            const teamId = document.getElementById('teamSelect').value;
+            const pokemonId = document.getElementById('pokemonSelect').value;
+            const level = document.getElementById('pokemonLevel').value;
+            const nickname = document.getElementById('pokemonNickname').value.trim();
+            const resultDiv = document.getElementById('addPokemonResult');
+
+            if (!teamId || !pokemonId || !level) {
+                resultDiv.innerHTML = 'Error: Please select team, pokemon, and enter level';
+                return;
+            }
+
+            try {
+                const pokemon = {
+                    pokemon_id: parseInt(pokemonId),
+                    level: parseInt(level),
+                    nickname: nickname || null
+                };
+
+                await makeRequest(`${API_BASE}/Teams/${teamId}/TeamPokemon/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(pokemon)
+                });
+
+                resultDiv.innerHTML = 'Success: Pokemon added to team!';
+                document.getElementById('pokemonLevel').value = '50';
+                document.getElementById('pokemonNickname').value = '';
+                loadTeams();
+            } catch (error) {
+                resultDiv.innerHTML = `Error: ${error.message}`;
+            }
+        }
+
+        async function loadTeams() {
+            const container = document.getElementById('teamsDisplay');
+            
+            try {
+                const teams = await makeRequest(`${API_BASE}/Teams/`);
+                
+                if (teams.length === 0) {
+                    container.innerHTML = '<p>No teams found. Create a team to get started!</p>';
+                    return;
+                }
+
+                let html = '<h3>Current Teams:</h3>';
+                for (const team of teams) {
+                    const pokemon = await loadTeamPokemon(team.id);
+                    const count = await getTeamPokemonCount(team.id);
+                    
+                    html += `
+                        <div>
+                            <h4>${team.name} (ID: ${team.id})</h4>
+                            <p>Pokemon Count: ${count.pokemon_count}/6 
+                               | Can add more: ${count.can_add_more ? 'Yes' : 'No'} 
+                               | Can remove: ${count.can_remove ? 'Yes' : 'No'}</p>
+                            <ul>
+                                ${pokemon.map(p => `
+                                    <li id="pokemon-${p.id}">
+                                        <div id="pokemon-display-${p.id}">
+                                            ${p.nickname || p.pokemon_name} (${p.pokemon_name}) - Level ${p.level}
+                                            <br>HP: ${p.calculated_hp} | ATK: ${p.calculated_attack} | DEF: ${p.calculated_defense} | SPD: ${p.calculated_speed} | SPC: ${p.calculated_special}
+                                            <br>
+                                            <button onclick="showEditForm(${team.id}, ${p.id}, '${p.nickname || ''}', ${p.level})">Edit</button>
+                                            <button onclick="removePokemon(${team.id}, ${p.id})" ${!count.can_remove ? 'disabled' : ''}>Remove</button>
+                                        </div>
+                                        <div id="pokemon-edit-${p.id}" style="display: none;">
+                                            <strong>Edit Pokemon:</strong><br>
+                                            <label>Nickname: <input type="text" id="edit-nickname-${p.id}" value="${p.nickname || ''}" placeholder="Optional nickname"></label><br>
+                                            <label>Level: <input type="number" id="edit-level-${p.id}" value="${p.level}" min="1" max="100"></label><br>
+                                            <button onclick="savePokemonEdit(${team.id}, ${p.id})">Save</button>
+                                            <button onclick="cancelPokemonEdit(${p.id})">Cancel</button>
+                                        </div>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                            <button onclick="deleteTeam(${team.id})">Delete Team</button>
+                            <hr>
+                        </div>
+                    `;
+                }
+                
+                container.innerHTML = html;
+                updateTeamSelect();
+                
+            } catch (error) {
+                container.innerHTML = `Error loading teams: ${error.message}`;
+            }
+        }
+
+        async function loadTeamPokemon(teamId) {
+            try {
+                return await makeRequest(`${API_BASE}/Teams/${teamId}/TeamPokemon/`);
+            } catch (error) {
+                console.error(`Error loading pokemon for team ${teamId}:`, error);
+                return [];
+            }
+        }
+
+        async function getTeamPokemonCount(teamId) {
+            try {
+                return await makeRequest(`${API_BASE}/Teams/${teamId}/TeamPokemon/count`);
+            } catch (error) {
+                console.error(`Error getting count for team ${teamId}:`, error);
+                return { pokemon_count: 0, can_add_more: true, can_remove: false };
+            }
+        }
+
+        async function loadPokemonList() {
+            try {
+                const pokemon = await makeRequest(`${API_BASE}/Pokemon/`);
+                const select = document.getElementById('pokemonSelect');
+                
+                select.innerHTML = '<option value="">Choose a Pokemon</option>';
+                pokemon.forEach(p => {
+                    select.innerHTML += `<option value="${p.id}">${p.name} (#${p.pokedex_number})</option>`;
+                });
+            } catch (error) {
+                console.error('Error loading Pokemon list:', error);
+                document.getElementById('pokemonSelect').innerHTML = '<option value="">Error loading Pokemon</option>';
+            }
+        }
+
+        async function updateTeamSelect() {
+            try {
+                const teams = await makeRequest(`${API_BASE}/Teams/`);
+                const select = document.getElementById('teamSelect');
+                
+                select.innerHTML = '<option value="">Choose a team</option>';
+                teams.forEach(team => {
+                    select.innerHTML += `<option value="${team.id}">${team.name}</option>`;
+                });
+            } catch (error) {
+                console.error('Error updating team select:', error);
+            }
+        }
+
+        async function removePokemon(teamId, pokemonId) {
+            if (!confirm('Are you sure you want to remove this Pokemon?')) {
+                return;
+            }
+
+            try {
+                await makeRequest(`${API_BASE}/Teams/${teamId}/TeamPokemon/${pokemonId}`, {
+                    method: 'DELETE'
+                });
+
+                loadTeams();
+            } catch (error) {
+                alert(`Error removing Pokemon: ${error.message}`);
+            }
+        }
+
+        async function deleteTeam(teamId) {
+            if (!confirm('Are you sure you want to delete this team? This will remove all Pokemon in the team.')) {
+                return;
+            }
+
+            try {
+                await makeRequest(`${API_BASE}/Teams/${teamId}`, {
+                    method: 'DELETE'
+                });
+
+                loadTeams();
+                updateTeamSelect();
+            } catch (error) {
+                alert(`Error deleting team: ${error.message}`);
+            }
+        }
+
+        function showEditForm(teamId, pokemonId, currentNickname, currentLevel) {
+            // Hide the display and show the edit form
+            document.getElementById(`pokemon-display-${pokemonId}`).style.display = 'none';
+            document.getElementById(`pokemon-edit-${pokemonId}`).style.display = 'block';
+            
+            // Set current values
+            document.getElementById(`edit-nickname-${pokemonId}`).value = currentNickname;
+            document.getElementById(`edit-level-${pokemonId}`).value = currentLevel;
+        }
+
+        function cancelPokemonEdit(pokemonId) {
+            // Show the display and hide the edit form
+            document.getElementById(`pokemon-display-${pokemonId}`).style.display = 'block';
+            document.getElementById(`pokemon-edit-${pokemonId}`).style.display = 'none';
+        }
+
+        async function savePokemonEdit(teamId, pokemonId) {
+            const nickname = document.getElementById(`edit-nickname-${pokemonId}`).value.trim();
+            const level = document.getElementById(`edit-level-${pokemonId}`).value;
+
+            if (!level || level < 1 || level > 100) {
+                alert('Please enter a valid level between 1 and 100');
+                return;
+            }
+
+            try {
+                const updateData = {
+                    level: parseInt(level),
+                    nickname: nickname || null
+                };
+
+                await makeRequest(`${API_BASE}/Teams/${teamId}/TeamPokemon/${pokemonId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(updateData)
+                });
+
+                // Refresh the teams display
+                loadTeams();
+                alert('Pokemon updated successfully!');
+            } catch (error) {
+                alert(`Error updating Pokemon: ${error.message}`);
+            }
+        }
+
+        async function testConnection() {
+            const debugDiv = document.getElementById('debugInfo');
+            debugDiv.innerHTML = 'Testing API connection...';
+            
+            try {
+                const response = await makeRequest(`${API_BASE}/`);
+                debugDiv.innerHTML = `
+                    <h4>API Connection Test Results:</h4>
+                    <p>✅ Connection successful!</p>
+                    <p>Response: ${JSON.stringify(response)}</p>
+                    <p>API Base URL: ${API_BASE}</p>
+                `;
+            } catch (error) {
+                debugDiv.innerHTML = `
+                    <h4>API Connection Test Results:</h4>
+                    <p>❌ Connection failed!</p>
+                    <p>Error: ${error.message}</p>
+                    <p>API Base URL: ${API_BASE}</p>
+                    <p>Make sure your Flask server is running on port 5001</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
