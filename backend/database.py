@@ -8,16 +8,13 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-class Trainer(BaseModel):
+class Team(BaseModel):
     id: Optional[int] = None
     name: str
-    age: Optional[int] = None
-    gender: Optional[str] = None
-    occupation: Optional[str] = None
 
-class TrainerPokemon(BaseModel):
+class TeamPokemon(BaseModel):
     id: Optional[int] = None
-    trainer_id: int
+    team_id: int
     pokemon_id: int
     nickname: Optional[str] = None
     level: int
@@ -32,6 +29,13 @@ class TrainerPokemon(BaseModel):
     ev_defense: int = 0
     ev_speed: int = 0
     ev_special: int = 0
+    current_hp: Optional[int] = None
+    status: Optional[str] = 'Healthy'
+    # Move slots (Generation 1 allows 4 moves max)
+    move1_id: Optional[int] = None
+    move2_id: Optional[int] = None
+    move3_id: Optional[int] = None
+    move4_id: Optional[int] = None
 
 class PokemonStats(BaseModel):
     hp: int
@@ -113,57 +117,54 @@ class PokemonDatabase:
                 conn.commit()
 
 
-    def create_trainer(self, trainer: Trainer) -> Trainer:
+    def create_team(self, team: Team) -> Team:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
-                "INSERT INTO Trainers (name, age, gender, occupation) VALUES (?, ?, ?, ?)",
-                (trainer.name, trainer.age, trainer.gender, trainer.occupation)
+                "INSERT INTO Team (name) VALUES (?)",
+                (team.name,)
             )
-            trainer.id = cursor.lastrowid
+            team.id = cursor.lastrowid
             conn.commit()
-        return trainer
+        return team
 
-    def get_trainer(self, trainer_id: int) -> Optional[Trainer]:
+    def get_team(self, team_id: int) -> Optional[Team]:
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
-            cursor = conn.execute("SELECT * FROM Trainers WHERE id = ?", (trainer_id,))
+            cursor = conn.execute("SELECT * FROM Team WHERE id = ?", (team_id,))
             row = cursor.fetchone()
             if row:
-                return Trainer(**dict(row))
+                return Team(**dict(row))
         return None
 
-    def get_all_trainers(self) -> List[Trainer]:
+    def get_all_teams(self) -> List[Team]:
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
-            cursor = conn.execute("SELECT * FROM Trainers")
+            cursor = conn.execute("SELECT * FROM Team")
             rows = cursor.fetchall()
-            return [Trainer(**dict(row)) for row in rows]
+            return [Team(**dict(row)) for row in rows]
 
-    def update_trainer(self, trainer_id: int, trainer: Trainer) -> Optional[Trainer]:
+    def update_team(self, team_id: int, team: Team) -> Optional[Team]:
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
-                "UPDATE Trainers SET name = ?, age = ?, gender = ?, occupation = ? WHERE id = ?",
-                (trainer.name, trainer.age, trainer.gender, trainer.occupation, trainer_id)
+                "UPDATE Team SET name = ? WHERE id = ?",
+                (team.name, team_id)
             )
             if conn.total_changes == 0:
                 return None
             conn.commit()
-            trainer.id = trainer_id
-            return trainer
+            team.id = team_id
+            return team
 
-    def delete_trainer(self, trainer_id: int) -> bool:
+    def delete_team(self, team_id: int) -> bool:
         with sqlite3.connect(self.db_path) as conn:
-            conn.execute("DELETE FROM Trainers WHERE id = ?", (trainer_id,))
-            conn.execute("DELETE FROM TrainerPokemon WHERE trainer_id = ?", (trainer_id,))
+            conn.execute("DELETE FROM Team WHERE id = ?", (team_id,))
+            conn.execute("DELETE FROM TeamPokemon WHERE team_id = ?", (team_id,))
             deleted = conn.total_changes > 0
             conn.commit()
             return deleted
 
-
-
-
-    def create_trainer_pokemon(self, tp: TrainerPokemon) -> TrainerPokemon:
-        """Create a new trainer pokemon with randomly generated IVs if not provided"""
+    def create_team_pokemon(self, tp: TeamPokemon) -> TeamPokemon:
+        """Create a new team pokemon with randomly generated IVs if not provided, and set current_hp and status."""
         # Always generate random IVs if they're all 0 (default values)
         if (tp.iv_attack == 0 and tp.iv_defense == 0 and 
             tp.iv_speed == 0 and tp.iv_special == 0):
@@ -173,59 +174,71 @@ class PokemonDatabase:
             tp.iv_speed = random_ivs['speed']
             tp.iv_special = random_ivs['special']
 
+        # Calculate max HP for this Pokémon
+        base_stats = self.get_pokemon_base_stats(tp.pokemon_id)
+        if base_stats:
+            hp_iv = Gen1StatCalculator.calculate_hp_iv(tp.iv_attack, tp.iv_defense, tp.iv_speed, tp.iv_special)
+            max_hp = Gen1StatCalculator.calculate_hp_stat(base_stats['hp'], tp.level, hp_iv, tp.ev_hp)
+        else:
+            max_hp = 10  # fallback
+        tp.current_hp = max_hp
+        tp.status = tp.status or 'Healthy'
+
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
-                """INSERT INTO TrainerPokemon 
-                   (trainer_id, pokemon_id, nickname, level,
+                """INSERT INTO TeamPokemon 
+                   (team_id, pokemon_id, nickname, level,
                     iv_attack, iv_defense, iv_speed, iv_special,
-                    ev_hp, ev_attack, ev_defense, ev_speed, ev_special) 
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (tp.trainer_id, tp.pokemon_id, tp.nickname, tp.level,
+                    ev_hp, ev_attack, ev_defense, ev_speed, ev_special,
+                    current_hp, status, move1_id, move2_id, move3_id, move4_id) 
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (tp.team_id, tp.pokemon_id, tp.nickname, tp.level,
                  tp.iv_attack, tp.iv_defense, tp.iv_speed, tp.iv_special,
-                 tp.ev_hp, tp.ev_attack, tp.ev_defense, tp.ev_speed, tp.ev_special)
+                 tp.ev_hp, tp.ev_attack, tp.ev_defense, tp.ev_speed, tp.ev_special,
+                 tp.current_hp, tp.status, tp.move1_id, tp.move2_id, tp.move3_id, tp.move4_id)
             )
             tp.id = cursor.lastrowid
             conn.commit()
         return tp
 
-    def get_trainer_pokemon(self, tp_id: int) -> Optional[TrainerPokemon]:
+    def get_team_pokemon(self, tp_id: int) -> Optional[TeamPokemon]:
         '''
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
-            cursor = conn.execute("SELECT * FROM TrainerPokemon WHERE trainer_id = ?", (trainer_id,))
+            cursor = conn.execute("SELECT * FROM TeamPokemon WHERE team_id = ?", (team_id,))
             rows = cursor.fetchall()
-            return [TrainerPokemon(**dict(row)) for row in rows]
+            return [TeamPokemon(**dict(row)) for row in rows]
         '''
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
-            cursor = conn.execute("SELECT * FROM TrainerPokemon WHERE id = ?", (tp_id,))
+            cursor = conn.execute("SELECT * FROM TeamPokemon WHERE id = ?", (tp_id,))
             row = cursor.fetchone()
             if row:
-                return TrainerPokemon(**dict(row))
+                return TeamPokemon(**dict(row))
             return None
 
 
-    def get_all_trainer_pokemons(self) -> List[TrainerPokemon]:
+    def get_all_team_pokemons(self) -> List[TeamPokemon]:
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
-            cursor = conn.execute("SELECT * FROM TrainerPokemon")
+            cursor = conn.execute("SELECT * FROM TeamPokemon")
             rows = cursor.fetchall()
-            return [TrainerPokemon(**dict(row)) for row in rows]
+            return [TeamPokemon(**dict(row)) for row in rows]
         
-    def get_trainer_pokemons_by_trainer_id(self, trainer_id: int) -> List[dict]:
+    def get_team_pokemons_by_team_id(self, team_id: int) -> List[dict]:
         """Get trainer pokemon with species data and calculated stats"""
-        print(f"[DEBUG] Getting Pokemon for trainer {trainer_id}")
+        print(f"[DEBUG] Getting Pokemon for trainer {team_id}")
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.execute("""
                 SELECT tp.*, p.name as pokemon_name, p.type1, p.type2,
                        p.base_hp, p.base_attack, p.base_defense, p.base_speed, p.base_special
-                FROM TrainerPokemon tp
+                FROM TeamPokemon tp
                 JOIN Pokemon p ON tp.pokemon_id = p.id
-                WHERE tp.trainer_id = ?
-            """, (trainer_id,))
+                WHERE tp.team_id = ?
+            """, (team_id,))
             rows = cursor.fetchall()
-            print(f"[DEBUG] Found {len(rows)} Pokemon for trainer {trainer_id}")
+            print(f"[DEBUG] Found {len(rows)} Pokemon for trainer {team_id}")
             
             result = []
             for row in rows:
@@ -286,17 +299,19 @@ class PokemonDatabase:
 
 
 
-    def update_trainer_pokemon(self, tp_id: int, tp: TrainerPokemon) -> Optional[TrainerPokemon]:
+    def update_team_pokemon(self, tp_id: int, tp: TeamPokemon) -> Optional[TeamPokemon]:
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
-                """UPDATE TrainerPokemon 
-                   SET trainer_id = ?, pokemon_id = ?, nickname = ?, level = ?,
+                """UPDATE TeamPokemon 
+                   SET team_id = ?, pokemon_id = ?, nickname = ?, level = ?,
                    iv_attack = ?, iv_defense = ?, iv_speed = ?, iv_special = ?,
-                   ev_hp = ?, ev_attack = ?, ev_defense = ?, ev_speed = ?, ev_special = ?
+                   ev_hp = ?, ev_attack = ?, ev_defense = ?, ev_speed = ?, ev_special = ?,
+                   current_hp = ?, status = ?, move1_id = ?, move2_id = ?, move3_id = ?, move4_id = ?
                WHERE id = ?""",
-                (tp.trainer_id, tp.pokemon_id, tp.nickname, tp.level,
+                (tp.team_id, tp.pokemon_id, tp.nickname, tp.level,
                  tp.iv_attack, tp.iv_defense, tp.iv_speed, tp.iv_special,
                  tp.ev_hp, tp.ev_attack, tp.ev_defense, tp.ev_speed, tp.ev_special,
+                 tp.current_hp, tp.status, tp.move1_id, tp.move2_id, tp.move3_id, tp.move4_id,
                  tp_id)
             )
             if conn.total_changes == 0:
@@ -305,9 +320,9 @@ class PokemonDatabase:
             tp.id = tp_id
             return tp
 
-    def delete_trainer_pokemon(self, tp_id: int) -> bool:
+    def delete_team_pokemon(self, tp_id: int) -> bool:
         with sqlite3.connect(self.db_path) as conn:
-            conn.execute("DELETE FROM TrainerPokemon WHERE id = ?", (tp_id,))
+            conn.execute("DELETE FROM TeamPokemon WHERE id = ?", (tp_id,))
             deleted = conn.total_changes > 0
             conn.commit()
             return deleted
@@ -334,7 +349,7 @@ class PokemonDatabase:
     def calculate_trainer_pokemon_stats(self, tp_id: int) -> Optional[PokemonStats]:
         """Calculate actual stats for a trainer's Pokémon"""
         # Get trainer pokemon data
-        tp = self.get_trainer_pokemon(tp_id)
+        tp = self.get_team_pokemon(tp_id)
         if not tp:
             return None
             
@@ -362,9 +377,9 @@ class PokemonDatabase:
         # Calculate and return stats
         return Gen1StatCalculator.calculate_all_stats(base_stats, tp.level, ivs, evs)
 
-    def get_trainer_pokemon_with_stats(self, tp_id: int) -> Optional[dict]:
+    def get_team_pokemon_with_stats(self, tp_id: int) -> Optional[dict]:
         """Get trainer pokemon data with calculated stats"""
-        tp = self.get_trainer_pokemon(tp_id)
+        tp = self.get_team_pokemon(tp_id)
         if not tp:
             return None
             

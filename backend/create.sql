@@ -89,25 +89,17 @@ CREATE TABLE PokemonMoves (
 (id)
 );
 
-CREATE TABLE Trainers (
+CREATE TABLE Team (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR
-(100) NOT NULL,
-    age INT CHECK
-(age > 0),
-    gender VARCHAR
-(10) CHECK
-(gender IN
-('Male', 'Female', 'Other')),
-    occupation VARCHAR
-(100)
+(100) NOT NULL
 );
 
 
 
-CREATE TABLE TrainerPokemon (
+CREATE TABLE TeamPokemon (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    trainer_id INT NOT NULL,
+    team_id INT NOT NULL,
     pokemon_id INT NOT NULL,
     nickname VARCHAR
 (50),
@@ -136,12 +128,36 @@ CREATE TABLE TrainerPokemon (
 (ev_speed BETWEEN 0 AND 65535),
     ev_special INT DEFAULT 0 CHECK
 (ev_special BETWEEN 0 AND 65535),
+    -- Battle fields
+    current_hp INT,
+    status VARCHAR
+(20),
+    -- Move slots (Generation 1 allows 4 moves max)
+    move1_id INT NOT NULL,
+    move2_id INT,
+    move3_id INT,
+    move4_id INT,
     FOREIGN KEY
-    move_id
-(trainer_id) REFERENCES Trainers
+(team_id) REFERENCES Team
 (id) ON
 DELETE CASCADE,
     FOREIGN KEY (pokemon_id)
 REFERENCES Pokemon
+(id),
+    FOREIGN KEY
+(move1_id)
+REFERENCES Moves
+(id),
+    FOREIGN KEY
+(move2_id)
+REFERENCES Moves
+(id),
+    FOREIGN KEY
+(move3_id)
+REFERENCES Moves
+(id),
+    FOREIGN KEY
+(move4_id)
+REFERENCES Moves
 (id)
 );

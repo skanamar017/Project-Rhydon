@@ -1,7 +1,7 @@
-# Combined Trainer and Pokémon info endpoint
+# Combined Team and Pokémon info endpoint
 
 from flask import Flask, request, jsonify, make_response
-from database import PokemonDatabase, Trainer, TrainerPokemon
+from database import PokemonDatabase, Team, TeamPokemon
 from typing import List
 import json
 import sqlite3
@@ -16,59 +16,59 @@ db = PokemonDatabase()
 
 @app.route("/", methods=["GET"])
 def home():
-    return {"message": "Pokemon Trainer API"}
+    return {"message": "Pokemon Team API"}
 
-# Trainer Endpoints
-@app.route("/Trainers/", methods=["POST"])
-def create_trainer():
+# Team Endpoints
+@app.route("/Teams/", methods=["POST"])
+def create_team():
     data = request.get_json()
-    trainer = Trainer(**data)
+    team = Team(**data)
     try:
-        created = db.create_trainer(trainer)
+        created = db.create_team(team)
         return jsonify(created.model_dump()), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
-@app.route("/Trainers/<int:trainer_id>", methods=["GET"])
-def get_trainer(trainer_id):
-    trainer = db.get_trainer(trainer_id)
+@app.route("/Teams/<int:team_id>", methods=["GET"])
+def get_team(team_id):
+    trainer = db.get_team(team_id)
     if trainer:
         return jsonify(trainer.model_dump()), 200
-    return jsonify({"error": "Trainer not found"}), 404
+    return jsonify({"error": "Team not found"}), 404
 
-@app.route("/Trainers/", methods=["GET"])
+@app.route("/Teams/", methods=["GET"])
 def get_all_trainers():
     trainers = db.get_all_trainers()
     return jsonify([t.model_dump() for t in trainers]), 200
 
-@app.route("/Trainers/<int:trainer_id>", methods=["PUT"])
-def update_trainer(trainer_id):
+@app.route("/Teams/<int:team_id>", methods=["PUT"])
+def update_team(team_id):
     data = request.get_json()
-    trainer = Trainer(**data)
-    updated = db.update_trainer(trainer_id, trainer)
+    trainer = Team(**data)
+    updated = db.update_team(team_id, trainer)
     if updated:
         return jsonify(updated.model_dump()), 200
-    return jsonify({"error": "Trainer not found"}), 404
+    return jsonify({"error": "Team not found"}), 404
 
-@app.route("/Trainers/<int:trainer_id>", methods=["DELETE"])
-def delete_trainer(trainer_id):
-    if db.delete_trainer(trainer_id):
-        return jsonify({"message": "Trainer deleted successfully"}), 200
-    return jsonify({"error": "Trainer not found"}), 404
+@app.route("/Teams/<int:team_id>", methods=["DELETE"])
+def delete_team(team_id):
+    if db.delete_team(team_id):
+        return jsonify({"message": "Team deleted successfully"}), 200
+    return jsonify({"error": "Team not found"}), 404
 
-# TrainerPokemon Endpoints
-@app.route("/Trainers/<int:trainer_id>/TrainerPokemon/", methods=["POST"])
-def create_trainer_pokemon(trainer_id):
+# TeamPokemon Endpoints
+@app.route("/Teams/<int:team_id>/TeamPokemon/", methods=["POST"])
+def create_team_pokemon(team_id):
     try:
         data = request.get_json()
-        print(f"[DEBUG] Creating Pokemon for trainer {trainer_id} with data: {data}")
+        print(f"[DEBUG] Creating Pokemon for trainer {team_id} with data: {data}")
         
-        # Ensure trainer_id is set in the data
-        data['trainer_id'] = trainer_id
+        # Ensure team_id is set in the data
+        data['team_id'] = team_id
         
-        # Create TrainerPokemon object
-        tp = TrainerPokemon(**data)
-        created = db.create_trainer_pokemon(tp)
+        # Create TeamPokemon object
+        tp = TeamPokemon(**data)
+        created = db.create_team_pokemon(tp)
         
         print(f"[DEBUG] Successfully created Pokemon: {created}")
         return jsonify(created.model_dump()), 201
@@ -78,39 +78,39 @@ def create_trainer_pokemon(trainer_id):
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-@app.route("/Trainers/<int:trainer_id>/TrainerPokemon/<int:tp_id>", methods=["GET"])
-def get_trainer_pokemon(trainer_id, tp_id):
-    tp = db.get_trainer_pokemon(tp_id)
+@app.route("/Teams/<int:team_id>/TeamPokemon/<int:tp_id>", methods=["GET"])
+def get_team_pokemon(team_id, tp_id):
+    tp = db.get_team_pokemon(tp_id)
     if tp:
         return jsonify(tp.model_dump()), 200
-    return jsonify({"error": "TrainerPokemon not found"}), 404
+    return jsonify({"error": "TeamPokemon not found"}), 404
 
-@app.route("/Trainers/<int:trainer_id>/TrainerPokemon/<int:tp_id>/stats", methods=["GET"])
-def get_trainer_pokemon_stats_route(trainer_id, tp_id):
+@app.route("/Teams/<int:team_id>/TeamPokemon/<int:tp_id>/stats", methods=["GET"])
+def get_team_pokemon_stats_route(team_id, tp_id):
     """Get calculated stats for a trainer's Pokémon"""
-    details = db.get_trainer_pokemon_with_stats(tp_id)
+    details = db.get_team_pokemon_with_stats(tp_id)
     if details:
         return jsonify(details), 200
-    return jsonify({"error": "Trainer Pokémon not found"}), 404
+    return jsonify({"error": "Team Pokémon not found"}), 404
 
-@app.route("/Trainers/<int:trainer_id>/TrainerPokemon/", methods=["GET"])
-@app.route("/Trainers/<int:trainer_id>/TrainerPokemon", methods=["GET"])
-def get_trainer_pokemons(trainer_id):
-    print(f"[DEBUG] get_trainer_pokemons called for trainer_id={trainer_id}")
-    tps = db.get_trainer_pokemons_by_trainer_id(trainer_id)
+@app.route("/Teams/<int:team_id>/TeamPokemon/", methods=["GET"])
+@app.route("/Teams/<int:team_id>/TeamPokemon", methods=["GET"])
+def get_team_pokemons(team_id):
+    print(f"[DEBUG] get_team_pokemons called for team_id={team_id}")
+    tps = db.get_team_pokemons_by_team_id(team_id)
     # Since tps is now a List[dict], we don't need .model_dump()
     return jsonify(tps), 200
 
-@app.route("/Trainers/<int:trainer_id>/TrainerPokemon/<int:tp_id>", methods=["PUT"])
-def update_trainer_pokemon(trainer_id, tp_id):
+@app.route("/Teams/<int:team_id>/TeamPokemon/<int:tp_id>", methods=["PUT"])
+def update_team_pokemon(team_id, tp_id):
     try:
         data = request.get_json()
         print(f"[DEBUG] Updating Pokemon {tp_id} with data: {data}")
         
         # Get the existing trainer pokemon first
-        existing_tp = db.get_trainer_pokemon(tp_id)
+        existing_tp = db.get_team_pokemon(tp_id)
         if not existing_tp:
-            return jsonify({"error": "TrainerPokemon not found"}), 404
+            return jsonify({"error": "TeamPokemon not found"}), 404
         
         # Update only the fields that are provided
         update_data = existing_tp.model_dump()
@@ -119,15 +119,15 @@ def update_trainer_pokemon(trainer_id, tp_id):
         if 'level' in data:
             update_data['level'] = data['level']
         
-        # Create updated TrainerPokemon object with all required fields
-        tp = TrainerPokemon(**update_data)
-        updated = db.update_trainer_pokemon(tp_id, tp)
+        # Create updated TeamPokemon object with all required fields
+        tp = TeamPokemon(**update_data)
+        updated = db.update_team_pokemon(tp_id, tp)
         
         if updated:
             print(f"[DEBUG] Successfully updated Pokemon: {updated}")
             return jsonify(updated.model_dump()), 200
         else:
-            return jsonify({"error": "Failed to update TrainerPokemon"}), 500
+            return jsonify({"error": "Failed to update TeamPokemon"}), 500
             
     except Exception as e:
         print(f"[ERROR] Failed to update Pokemon: {str(e)}")
@@ -135,11 +135,11 @@ def update_trainer_pokemon(trainer_id, tp_id):
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-@app.route("/Trainers/<int:trainer_id>/TrainerPokemon/<int:tp_id>", methods=["DELETE"])
-def delete_trainer_pokemon(trainer_id, tp_id):
-    if db.delete_trainer_pokemon(tp_id):
-        return jsonify({"message": "TrainerPokemon deleted successfully"}), 200
-    return jsonify({"error": "TrainerPokemon not found"}), 404
+@app.route("/Teams/<int:team_id>/TeamPokemon/<int:tp_id>", methods=["DELETE"])
+def delete_team_pokemon(team_id, tp_id):
+    if db.delete_team_pokemon(tp_id):
+        return jsonify({"message": "TeamPokemon deleted successfully"}), 200
+    return jsonify({"error": "TeamPokemon not found"}), 404
 
 @app.route("/Pokemon/", methods=["GET"])
 def get_all_pokemon():
@@ -154,6 +154,106 @@ def get_all_pokemon():
         rows = cursor.fetchall()
         result = [dict(row) for row in rows]
     return jsonify(result), 200
+
+@app.route("/Pokemon/<int:pokemon_id>/moves", methods=["GET"])
+def get_pokemon_moves(pokemon_id):
+    """Get all moves for a specific Pokemon, optionally filtered by max level."""
+    max_level = request.args.get("max_level", type=int)
+    move_type = request.args.get("type")  # level-up, tm-hm, or all
+    
+    with sqlite3.connect("pokemon.db") as conn:
+        conn.row_factory = sqlite3.Row
+        
+        # Base query
+        query = """
+        SELECT 
+            pm.move_id,
+            m.name as move_name,
+            pm.level_learned,
+            m.type as move_type,
+            m.power,
+            m.accuracy,
+            m.pp,
+            CASE 
+                WHEN pm.level_learned = 0 THEN 'TM/HM'
+                ELSE 'Level-up'
+            END as learn_method
+        FROM PokemonMoves pm
+        JOIN Moves m ON pm.move_id = m.id
+        WHERE pm.pokemon_id = ?
+        """
+        
+        params = [pokemon_id]
+        
+        # Add filters
+        if max_level is not None:
+            query += " AND (pm.level_learned <= ? OR pm.level_learned = 0)"
+            params.append(max_level)
+        
+        if move_type == "level-up":
+            query += " AND pm.level_learned > 0"
+        elif move_type == "tm-hm":
+            query += " AND pm.level_learned = 0"
+        
+        query += " ORDER BY pm.level_learned, m.name"
+        
+        cursor = conn.execute(query, params)
+        moves = cursor.fetchall()
+        
+        # Get Pokemon name for response
+        pokemon_cursor = conn.execute("SELECT name FROM Pokemon WHERE id = ?", [pokemon_id])
+        pokemon_result = pokemon_cursor.fetchone()
+        pokemon_name = pokemon_result[0] if pokemon_result else f"Pokemon #{pokemon_id}"
+        
+        result = {
+            "pokemon_id": pokemon_id,
+            "pokemon_name": pokemon_name,
+            "filters": {
+                "max_level": max_level,
+                "type": move_type
+            },
+            "moves": [dict(move) for move in moves]
+        }
+        
+        return jsonify(result), 200
+
+@app.route("/Pokemon/<int:pokemon_id>/moves/level/<int:level>", methods=["GET"])
+def get_pokemon_moves_at_level(pokemon_id, level):
+    """Get moves that a Pokemon learns at a specific level."""
+    with sqlite3.connect("pokemon.db") as conn:
+        conn.row_factory = sqlite3.Row
+        
+        query = """
+        SELECT 
+            pm.move_id,
+            m.name as move_name,
+            pm.level_learned,
+            m.type as move_type,
+            m.power,
+            m.accuracy,
+            m.pp
+        FROM PokemonMoves pm
+        JOIN Moves m ON pm.move_id = m.id
+        WHERE pm.pokemon_id = ? AND pm.level_learned = ?
+        ORDER BY m.name
+        """
+        
+        cursor = conn.execute(query, [pokemon_id, level])
+        moves = cursor.fetchall()
+        
+        # Get Pokemon name
+        pokemon_cursor = conn.execute("SELECT name FROM Pokemon WHERE id = ?", [pokemon_id])
+        pokemon_result = pokemon_cursor.fetchone()
+        pokemon_name = pokemon_result[0] if pokemon_result else f"Pokemon #{pokemon_id}"
+        
+        result = {
+            "pokemon_id": pokemon_id,
+            "pokemon_name": pokemon_name,
+            "level": level,
+            "moves": [dict(move) for move in moves]
+        }
+        
+        return jsonify(result), 200
 
 if __name__ == "__main__":
     app.run(debug=True, port=5001)

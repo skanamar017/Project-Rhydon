@@ -2,88 +2,88 @@
 -- Sample Data for Pokemon Table
 -- Format: ('Name', 'Type1', 'Type2', HP, Attack, Defense, Special, Speed)
 
-INSERT INTO Trainers
-    (name, age, gender, occupation)
+INSERT INTO Team
+    (name)
 VALUES
-    ('Ash', 10, 'Male', 'Pokemon Trainer'),
-    ('Misty', 12, 'Female', 'Gym Leader'),
-    ('Brock', 15, 'Male', 'Gym Leader'),
-    ('Lt. Surge', 35, 'Male', 'Gym Leader'),
-    ('Erika', 18, 'Female', 'Gym Leader'),
-    ('Koga', 32, 'Male', 'Gym Leader'),
-    ('Sabrina', 21, 'Female', 'Gym Leader'),
-    ('Blaine', 50, 'Male', 'Gym Leader'),
-    ('Giovanni', 45, 'Male', 'Team Rocket Boss'),
-    ('Lorelei', 30, 'Female', 'Ice Elite Four');
+    ('Ash'),
+    ('Misty'),
+    ('Brock'),
+    ('Lt. Surge'),
+    ('Erika'),
+    ('Koga'),
+    ('Sabrina'),
+    ('Blaine'),
+    ('Giovanni'),
+    ('Lorelei');
 
-INSERT INTO TrainerPokemon
-    (trainer_id, pokemon_id, nickname, level, iv_attack, iv_defense, iv_speed, iv_special, ev_hp, ev_attack, ev_defense, ev_speed, ev_special)
+INSERT INTO TeamPokemon
+    (team_id, pokemon_id, nickname, level, iv_attack, iv_defense, iv_speed, iv_special, ev_hp, ev_attack, ev_defense, ev_speed, ev_special, current_hp, status, move1_id, move2_id, move3_id, move4_id)
 VALUES
     -- Ash's Pokémon
-    (1, 25, 'Sparky', 10, 15, 12, 14, 13, 0, 0, 0, 0, 0),
-    -- Pikachu
-    (1, 1, 'Leafy', 8, 10, 11, 8, 12, 0, 0, 0, 0, 0),
-    -- Bulbasaur
-    (1, 4, 'Flare', 9, 12, 9, 13, 11, 0, 0, 0, 0, 0),
-    -- Charmander
-    (1, 7, 'Bubbles', 8, 8, 14, 10, 9, 0, 0, 0, 0, 0),
-    -- Squirtle
+    (1, 25, 'Sparky', 10, 15, 12, 14, 13, 0, 0, 0, 0, 0, 35, 'Healthy', 9, NULL, NULL, NULL),
+    -- Pikachu (Thunder Punch)
+    (1, 1, 'Leafy', 8, 10, 11, 8, 12, 0, 0, 0, 0, 0, 45, 'Healthy', 1, NULL, NULL, NULL),
+    -- Bulbasaur (Pound)
+    (1, 4, 'Flare', 9, 12, 9, 13, 11, 0, 0, 0, 0, 0, 39, 'Healthy', 7, NULL, NULL, NULL),
+    -- Charmander (Fire Punch)
+    (1, 7, 'Bubbles', 8, 8, 14, 10, 9, 0, 0, 0, 0, 0, 44, 'Healthy', 1, NULL, NULL, NULL),
+    -- Squirtle (Pound)
 
     -- Misty's Pokémon
-    (2, 120, 'Sting', 12, 11, 10, 15, 12, 0, 0, 0, 0, 0),
-    -- Staryu
-    (2, 121, 'Shelly', 14, 13, 12, 14, 15, 0, 0, 0, 0, 0),
-    -- Starmie
-    (2, 54, 'Quackers', 10, 9, 8, 7, 11, 0, 0, 0, 0, 0),
-    -- Psyduck
+    (2, 120, 'Sting', 12, 11, 10, 15, 12, 0, 0, 0, 0, 0, 30, 'Healthy', 1, NULL, NULL, NULL),
+    -- Staryu (Pound)
+    (2, 121, 'Shelly', 14, 13, 12, 14, 15, 0, 0, 0, 0, 0, 60, 'Healthy', 1, NULL, NULL, NULL),
+    -- Starmie (Pound)
+    (2, 54, 'Quackers', 10, 9, 8, 7, 11, 0, 0, 0, 0, 0, 50, 'Healthy', 1, NULL, NULL, NULL),
+    -- Psyduck (Pound)
 
     -- Brock's Pokémon
-    (3, 95, 'Onixy', 15, 8, 15, 6, 5, 0, 0, 0, 0, 0),
-    -- Onix
-    (3, 74, 'Rocky', 12, 14, 13, 4, 6, 0, 0, 0, 0, 0),
-    -- Geodude
-    (3, 41, 'Zubats', 10, 9, 7, 11, 8, 0, 0, 0, 0, 0),
-    -- Zubat
+    (3, 95, 'Onixy', 15, 8, 15, 6, 5, 0, 0, 0, 0, 0, 35, 'Healthy', 1, NULL, NULL, NULL),
+    -- Onix (Pound)
+    (3, 74, 'Rocky', 12, 14, 13, 4, 6, 0, 0, 0, 0, 0, 40, 'Healthy', 1, NULL, NULL, NULL),
+    -- Geodude (Pound)
+    (3, 41, 'Zubats', 10, 9, 7, 11, 8, 0, 0, 0, 0, 0, 40, 'Healthy', 16, NULL, NULL, NULL),
+    -- Zubat (Gust)
 
     -- Lt. Surge's Pokémon
-    (4, 26, 'Bolt', 20, 15, 10, 15, 12, 0, 0, 0, 0, 0),
-    -- Raichu
-    (4, 25, 'Sparky Jr.', 18, 14, 8, 13, 11, 0, 0, 0, 0, 0),
-    -- Pikachu
+    (4, 26, 'Bolt', 20, 15, 10, 15, 12, 0, 0, 0, 0, 0, 60, 'Healthy', 9, NULL, NULL, NULL),
+    -- Raichu (Thunder Punch)
+    (4, 25, 'Sparky Jr.', 18, 14, 8, 13, 11, 0, 0, 0, 0, 0, 35, 'Healthy', 9, NULL, NULL, NULL),
+    -- Pikachu (Thunder Punch)
 
     -- Erika's Pokémon
-    (5, 71, 'Vile', 16, 12, 11, 13, 15, 0, 0, 0, 0, 0),
-    -- Victreebel
-    (5, 43, 'Oddy', 14, 8, 9, 6, 12, 0, 0, 0, 0, 0),
-    -- Oddish
+    (5, 71, 'Vile', 16, 12, 11, 13, 15, 0, 0, 0, 0, 0, 80, 'Healthy', 1, NULL, NULL, NULL),
+    -- Victreebel (Pound)
+    (5, 43, 'Oddy', 14, 8, 9, 6, 12, 0, 0, 0, 0, 0, 45, 'Healthy', 1, NULL, NULL, NULL),
+    -- Oddish (Pound)
 
     -- Koga's Pokémon
-    (6, 110, 'Weezy', 17, 13, 14, 9, 12, 0, 0, 0, 0, 0),
-    -- Weezing
-    (6, 89, 'Muk', 18, 15, 11, 7, 10, 0, 0, 0, 0, 0),
-    -- Muk
-    (6, 48, 'Venonat', 12, 7, 8, 9, 6, 0, 0, 0, 0, 0),
-    -- Venonat
+    (6, 110, 'Weezy', 17, 13, 14, 9, 12, 0, 0, 0, 0, 0, 65, 'Healthy', 1, NULL, NULL, NULL),
+    -- Weezing (Pound)
+    (6, 89, 'Muk', 18, 15, 11, 7, 10, 0, 0, 0, 0, 0, 105, 'Healthy', 1, NULL, NULL, NULL),
+    -- Muk (Pound)
+    (6, 48, 'Venonat', 12, 7, 8, 9, 6, 0, 0, 0, 0, 0, 60, 'Healthy', 1, NULL, NULL, NULL),
+    -- Venonat (Pound)
 
     -- Sabrina's Pokémon
-    (7, 65, 'Alak', 20, 10, 8, 15, 15, 0, 0, 0, 0, 0),
-    -- Alakazam
-    (7, 64, 'Kadabra', 18, 9, 7, 14, 14, 0, 0, 0, 0, 0),
-    -- Kadabra
+    (7, 65, 'Alak', 20, 10, 8, 15, 15, 0, 0, 0, 0, 0, 55, 'Healthy', 1, NULL, NULL, NULL),
+    -- Alakazam (Pound)
+    (7, 64, 'Kadabra', 18, 9, 7, 14, 14, 0, 0, 0, 0, 0, 40, 'Healthy', 1, NULL, NULL, NULL),
+    -- Kadabra (Pound)
 
     -- Blaine's Pokémon
-    (8, 126, 'Magmy', 18, 14, 9, 12, 15, 0, 0, 0, 0, 0),
-    -- Magmar
-    (8, 77, 'Ponyta', 16, 11, 8, 10, 9, 0, 0, 0, 0, 0),
-    -- Ponyta
+    (8, 126, 'Magmy', 18, 14, 9, 12, 15, 0, 0, 0, 0, 0, 65, 'Healthy', 7, NULL, NULL, NULL),
+    -- Magmar (Fire Punch)
+    (8, 77, 'Ponyta', 16, 11, 8, 10, 9, 0, 0, 0, 0, 0, 50, 'Healthy', 7, NULL, NULL, NULL),
+    -- Ponyta (Fire Punch)
 
     -- Giovanni's Pokémon
-    (9, 112, 'Rokky', 22, 15, 15, 8, 10, 0, 0, 0, 0, 0),
-    -- Rhydon
-    (9, 34, 'Nido', 20, 14, 12, 13, 13, 0, 0, 0, 0, 0),
-    -- Nidoking
+    (9, 112, 'Rokky', 22, 15, 15, 8, 10, 0, 0, 0, 0, 0, 105, 'Healthy', 1, NULL, NULL, NULL),
+    -- Rhydon (Pound)
+    (9, 34, 'Nido', 20, 14, 12, 13, 13, 0, 0, 0, 0, 0, 81, 'Healthy', 1, NULL, NULL, NULL),
+    -- Nidoking (Pound)
 
     -- Lorelei's Pokémon
-    (10, 121, 'Stary', 18, 12, 13, 15, 14, 0, 0, 0, 0, 0),
-    -- Starmie
-    (10, 91, 'Cloy', 16, 13, 15, 11, 12, 0, 0, 0, 0, 0);     -- Cloyster
+    (10, 121, 'Stary', 18, 12, 13, 15, 14, 0, 0, 0, 0, 0, 60, 'Healthy', 8, NULL, NULL, NULL),
+    -- Starmie (Ice Punch)
+    (10, 91, 'Cloy', 16, 13, 15, 11, 12, 0, 0, 0, 0, 0, 50, 'Healthy', 8, NULL, NULL, NULL);     -- Cloyster (Ice Punch)
