@@ -106,14 +106,37 @@ class PokemonDatabase:
         self.init_db()
 
     def init_db(self):
-        """Initialize the database using create 4.sql and insert 7.sql"""
+        """Initialize the database using create.sql and all insert files"""
         if not os.path.exists(self.db_path):
             with sqlite3.connect(self.db_path) as conn:
+                # First create the tables
+                with open("create.sql", "r") as f:
+                    sql_script = f.read()
+                conn.executescript(sql_script)
+                
+                # Temporarily disable foreign keys for data insertion
+                conn.execute("PRAGMA foreign_keys = OFF")
+                
+                # Then insert data files individually to handle errors
+                sql_files = [
+                    "gen1_pokemon_inserts.sql",  # Pokemon data first
+                    "gen1_moves_inserts.sql",    # Then moves
+                    "gen1_pokemon_moves_inserts.sql",  # Then pokemon-move relationships
+                    "insert.sql"                 # Finally teams and team pokemon
+                ]
+                
+                for sql_file in sql_files:
+                    if os.path.exists(sql_file):
+                        try:
+                            with open(sql_file, "r") as f:
+                                sql_script = f.read()
+                            conn.executescript(sql_script)
+                            print(f"Successfully loaded {sql_file}")
+                        except Exception as e:
+                            print(f"Warning: Could not load {sql_file}: {e}")
+                                
+                # Re-enable foreign keys
                 conn.execute("PRAGMA foreign_keys = ON")
-                for sql_file in ["create.sql", "insert.sql"]:
-                    with open(sql_file, "r") as f:
-                        sql_script = f.read()
-                    conn.executescript(sql_script)
                 conn.commit()
 
 

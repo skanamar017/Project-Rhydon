@@ -29,7 +29,7 @@ VALUES
 
 CREATE TABLE Pokemon (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    pokedex_number INT NOT NULL,
+    pokedex_number INT NOT NULL UNIQUE,
     name VARCHAR
 (50) NOT NULL,
     type1 VARCHAR
