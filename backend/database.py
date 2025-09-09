@@ -274,7 +274,7 @@ class PokemonDatabase:
                 SELECT tp.*, p.name as pokemon_name, p.type1, p.type2,
                        p.base_hp, p.base_attack, p.base_defense, p.base_speed, p.base_special
                 FROM TeamPokemon tp
-                JOIN Pokemon p ON tp.pokemon_id = p.id
+                JOIN Pokemon p ON tp.pokemon_id = p.pokedex_number
                 WHERE tp.team_id = ?
             """, (team_id,))
             rows = cursor.fetchall()
