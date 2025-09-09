@@ -1,7 +1,7 @@
 # Combined Team and Pokémon info endpoint
 
 from flask import Flask, request, jsonify, make_response
-from database import PokemonDatabase, Team, TeamPokemon
+from database import PokemonDatabase, Team, TeamPokemon, Gen1StatCalculator
 from typing import List
 import json
 import sqlite3
@@ -37,9 +37,9 @@ def get_team(team_id):
     return jsonify({"error": "Team not found"}), 404
 
 @app.route("/Teams/", methods=["GET"])
-def get_all_trainers():
-    trainers = db.get_all_trainers()
-    return jsonify([t.model_dump() for t in trainers]), 200
+def get_all_teams():
+    teams = db.get_all_teams()
+    return jsonify([t.model_dump() for t in teams]), 200
 
 @app.route("/Teams/<int:team_id>", methods=["PUT"])
 def update_team(team_id):
@@ -72,6 +72,10 @@ def create_team_pokemon(team_id):
         
         print(f"[DEBUG] Successfully created Pokemon: {created}")
         return jsonify(created.model_dump()), 201
+    except ValueError as ve:
+        # Handle validation errors (like team size limits)
+        print(f"[ERROR] Validation error: {str(ve)}")
+        return jsonify({"error": str(ve)}), 400
     except Exception as e:
         print(f"[ERROR] Failed to create Pokemon: {str(e)}")
         import traceback
@@ -100,6 +104,20 @@ def get_team_pokemons(team_id):
     tps = db.get_team_pokemons_by_team_id(team_id)
     # Since tps is now a List[dict], we don't need .model_dump()
     return jsonify(tps), 200
+
+@app.route("/Teams/<int:team_id>/TeamPokemon/count", methods=["GET"])
+def get_team_pokemon_count(team_id):
+    """Get the current number of Pokemon in a team"""
+    try:
+        count = db.get_team_pokemon_count(team_id)
+        return jsonify({
+            "team_id": team_id,
+            "pokemon_count": count,
+            "can_add_more": count < 6,
+            "can_remove": count > 1
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/Teams/<int:team_id>/TeamPokemon/<int:tp_id>", methods=["PUT"])
 def update_team_pokemon(team_id, tp_id):
@@ -137,9 +155,15 @@ def update_team_pokemon(team_id, tp_id):
 
 @app.route("/Teams/<int:team_id>/TeamPokemon/<int:tp_id>", methods=["DELETE"])
 def delete_team_pokemon(team_id, tp_id):
-    if db.delete_team_pokemon(tp_id):
-        return jsonify({"message": "TeamPokemon deleted successfully"}), 200
-    return jsonify({"error": "TeamPokemon not found"}), 404
+    try:
+        if db.delete_team_pokemon(tp_id):
+            return jsonify({"message": "TeamPokemon deleted successfully"}), 200
+        return jsonify({"error": "TeamPokemon not found"}), 404
+    except ValueError as ve:
+        # Handle validation errors (like trying to delete last Pokemon)
+        return jsonify({"error": str(ve)}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/Pokemon/", methods=["GET"])
 def get_all_pokemon():
@@ -254,6 +278,31 @@ def get_pokemon_moves_at_level(pokemon_id, level):
         }
         
         return jsonify(result), 200
+
+@app.route("/pokemon/<int:pokemon_id>/base_stats", methods=["GET"])
+def get_pokemon_base_stats_route(pokemon_id: int):
+    """Get base stats for a Pokémon species"""
+    base_stats = db.get_pokemon_base_stats(pokemon_id)
+    if base_stats:
+        return jsonify(base_stats), 200
+    return jsonify({"error": "Pokémon not found"}), 404
+
+@app.route("/calculate_stats", methods=["POST"])
+def calculate_stats_endpoint():
+    """Calculate stats given base stats, level, IVs, and EVs"""
+    data = request.get_json()
+    required_fields = ['base_stats', 'level', 'ivs', 'evs']
+    
+    if not data or not all(field in data for field in required_fields):
+        return jsonify({"error": "Required fields: base_stats, level, ivs, evs"}), 400
+    
+    try:
+        stats = Gen1StatCalculator.calculate_all_stats(
+            data['base_stats'], data['level'], data['ivs'], data['evs']
+        )
+        return jsonify(stats.dict()), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
 if __name__ == "__main__":
     app.run(debug=True, port=5001)

@@ -156,6 +156,11 @@ class PokemonDatabase:
             return team
 
     def delete_team(self, team_id: int) -> bool:
+        # Check if team would be left with 0 Pokemon after deletion (optional constraint)
+        current_pokemon_count = self.get_team_pokemon_count(team_id)
+        # Note: Allowing deletion of teams even if they have Pokemon, 
+        # but you could add a constraint here if needed
+        
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("DELETE FROM Team WHERE id = ?", (team_id,))
             conn.execute("DELETE FROM TeamPokemon WHERE team_id = ?", (team_id,))
@@ -163,8 +168,20 @@ class PokemonDatabase:
             conn.commit()
             return deleted
 
+    def get_team_pokemon_count(self, team_id: int) -> int:
+        """Get the number of Pokemon currently in a team"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute("SELECT COUNT(*) FROM TeamPokemon WHERE team_id = ?", (team_id,))
+            count = cursor.fetchone()[0]
+            return count
+
     def create_team_pokemon(self, tp: TeamPokemon) -> TeamPokemon:
         """Create a new team pokemon with randomly generated IVs if not provided, and set current_hp and status."""
+        # Check if team already has 6 Pokemon
+        current_pokemon_count = self.get_team_pokemon_count(tp.team_id)
+        if current_pokemon_count >= 6:
+            raise ValueError("Team cannot have more than 6 Pokemon")
+        
         # Always generate random IVs if they're all 0 (default values)
         if (tp.iv_attack == 0 and tp.iv_defense == 0 and 
             tp.iv_speed == 0 and tp.iv_special == 0):
@@ -321,7 +338,21 @@ class PokemonDatabase:
             return tp
 
     def delete_team_pokemon(self, tp_id: int) -> bool:
+        # First, get the team_id for this Pokemon
         with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute("SELECT team_id FROM TeamPokemon WHERE id = ?", (tp_id,))
+            result = cursor.fetchone()
+            if not result:
+                return False  # Pokemon doesn't exist
+            
+            team_id = result[0]
+            
+            # Check if this would leave the team with no Pokemon
+            current_pokemon_count = self.get_team_pokemon_count(team_id)
+            if current_pokemon_count <= 1:
+                raise ValueError("Cannot delete the last Pokemon from a team. Teams must have at least 1 Pokemon.")
+            
+            # Proceed with deletion
             conn.execute("DELETE FROM TeamPokemon WHERE id = ?", (tp_id,))
             deleted = conn.total_changes > 0
             conn.commit()
@@ -405,7 +436,6 @@ class PokemonDatabase:
             result['type2'] = pokemon_row['type2']
             
         return result
-
 @app.route("/pokemon/<int:pokemon_id>/base_stats", methods=["GET"])
 def get_pokemon_base_stats_route(pokemon_id: int):
     """Get base stats for a Pokémon species"""
