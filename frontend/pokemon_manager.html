@@ -107,6 +107,14 @@
             min-width: 80px;
         }
         
+        .stat-input {
+            width: 80px;
+            padding: 5px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
         .stat-range {
             font-size: 12px;
             color: #6c757d;
@@ -554,11 +562,15 @@
             document.getElementById('pokemonStatus').value = pokemon.status || 'Healthy';
             document.getElementById('pokemonHP').value = pokemon.current_hp || '';
             
-            // Load IVs
-            document.getElementById('iv_attack').value = pokemon.iv_attack || 0;
-            document.getElementById('iv_defense').value = pokemon.iv_defense || 0;
-            document.getElementById('iv_speed').value = pokemon.iv_speed || 0;
-            document.getElementById('iv_special').value = pokemon.iv_special || 0;
+            // Display IVs (read-only)
+            document.getElementById('iv_attack_display').textContent = pokemon.iv_attack || 0;
+            document.getElementById('iv_defense_display').textContent = pokemon.iv_defense || 0;
+            document.getElementById('iv_speed_display').textContent = pokemon.iv_speed || 0;
+            document.getElementById('iv_special_display').textContent = pokemon.iv_special || 0;
+            
+            // Calculate and display HP IV
+            const hpIV = ((pokemon.iv_attack % 2) * 8) + ((pokemon.iv_defense % 2) * 4) + ((pokemon.iv_speed % 2) * 2) + (pokemon.iv_special % 2);
+            document.getElementById('iv_hp_display').textContent = hpIV;
             
             // Load EVs
             document.getElementById('ev_hp').value = pokemon.ev_hp || 0;
@@ -616,15 +628,15 @@
             });
         }
         
-        function updateCalculatedStats() {
+        function recalculateStats() {
             if (!currentPokemon) return;
             
             const level = parseInt(document.getElementById('pokemonLevel').value) || 1;
             const ivs = {
-                attack: parseInt(document.getElementById('iv_attack').value) || 0,
-                defense: parseInt(document.getElementById('iv_defense').value) || 0,
-                speed: parseInt(document.getElementById('iv_speed').value) || 0,
-                special: parseInt(document.getElementById('iv_special').value) || 0
+                attack: parseInt(document.getElementById('iv_attack_display').textContent) || 0,
+                defense: parseInt(document.getElementById('iv_defense_display').textContent) || 0,
+                speed: parseInt(document.getElementById('iv_speed_display').textContent) || 0,
+                special: parseInt(document.getElementById('iv_special_display').textContent) || 0
             };
             const evs = {
                 hp: parseInt(document.getElementById('ev_hp').value) || 0,
@@ -637,15 +649,16 @@
             // Calculate HP IV from other IVs (Gen 1 mechanic)
             const hpIV = ((ivs.attack % 2) * 8) + ((ivs.defense % 2) * 4) + ((ivs.speed % 2) * 2) + (ivs.special % 2);
             
-            // Calculate stats using Gen 1 formula
+            // Use base stats from current Pokemon data
             const baseStats = {
-                hp: currentPokemon.base_hp,
-                attack: currentPokemon.base_attack,
-                defense: currentPokemon.base_defense,
-                speed: currentPokemon.base_speed,
-                special: currentPokemon.base_special
+                hp: currentPokemon.base_hp || 50,
+                attack: currentPokemon.base_attack || 50,
+                defense: currentPokemon.base_defense || 50,
+                speed: currentPokemon.base_speed || 50,
+                special: currentPokemon.base_special || 50
             };
             
+            // Calculate stats using Gen 1 formula
             const calculatedStats = {
                 hp: Math.floor(((baseStats.hp + hpIV) * 2 + Math.floor(Math.sqrt(evs.hp) / 4)) * level / 100) + level + 10,
                 attack: Math.floor(((baseStats.attack + ivs.attack) * 2 + Math.floor(Math.sqrt(evs.attack) / 4)) * level / 100) + 5,
@@ -662,20 +675,62 @@
             document.getElementById('calc_special').textContent = calculatedStats.special;
         }
         
-        function randomizeIVs() {
-            document.getElementById('iv_attack').value = Math.floor(Math.random() * 16);
-            document.getElementById('iv_defense').value = Math.floor(Math.random() * 16);
-            document.getElementById('iv_speed').value = Math.floor(Math.random() * 16);
-            document.getElementById('iv_special').value = Math.floor(Math.random() * 16);
-            updateCalculatedStats();
-        }
-        
-        function maxIVs() {
-            document.getElementById('iv_attack').value = 15;
-            document.getElementById('iv_defense').value = 15;
-            document.getElementById('iv_speed').value = 15;
-            document.getElementById('iv_special').value = 15;
-            updateCalculatedStats();
+        function updateCalculatedStats() {
+            if (!currentPokemon) return;
+            
+            // Check if we already have calculated stats from the backend
+            if (currentPokemon.calculated_hp !== undefined) {
+                document.getElementById('calc_hp').textContent = currentPokemon.calculated_hp;
+                document.getElementById('calc_attack').textContent = currentPokemon.calculated_attack;
+                document.getElementById('calc_defense').textContent = currentPokemon.calculated_defense;
+                document.getElementById('calc_speed').textContent = currentPokemon.calculated_speed;
+                document.getElementById('calc_special').textContent = currentPokemon.calculated_special;
+                return;
+            }
+            
+            // If no calculated stats from backend, calculate them manually
+            const level = parseInt(document.getElementById('pokemonLevel').value) || 1;
+            const ivs = {
+                attack: parseInt(document.getElementById('iv_attack_display').textContent) || 0,
+                defense: parseInt(document.getElementById('iv_defense_display').textContent) || 0,
+                speed: parseInt(document.getElementById('iv_speed_display').textContent) || 0,
+                special: parseInt(document.getElementById('iv_special_display').textContent) || 0
+            };
+            const evs = {
+                hp: parseInt(document.getElementById('ev_hp').value) || 0,
+                attack: parseInt(document.getElementById('ev_attack').value) || 0,
+                defense: parseInt(document.getElementById('ev_defense').value) || 0,
+                speed: parseInt(document.getElementById('ev_speed').value) || 0,
+                special: parseInt(document.getElementById('ev_special').value) || 0
+            };
+            
+            // Calculate HP IV from other IVs (Gen 1 mechanic)
+            const hpIV = ((ivs.attack % 2) * 8) + ((ivs.defense % 2) * 4) + ((ivs.speed % 2) * 2) + (ivs.special % 2);
+            
+            // Use base stats from current Pokemon data (fallback to 0 if missing)
+            const baseStats = {
+                hp: currentPokemon.base_hp || 50,
+                attack: currentPokemon.base_attack || 50,
+                defense: currentPokemon.base_defense || 50,
+                speed: currentPokemon.base_speed || 50,
+                special: currentPokemon.base_special || 50
+            };
+            
+            // Calculate stats using Gen 1 formula
+            const calculatedStats = {
+                hp: Math.floor(((baseStats.hp + hpIV) * 2 + Math.floor(Math.sqrt(evs.hp) / 4)) * level / 100) + level + 10,
+                attack: Math.floor(((baseStats.attack + ivs.attack) * 2 + Math.floor(Math.sqrt(evs.attack) / 4)) * level / 100) + 5,
+                defense: Math.floor(((baseStats.defense + ivs.defense) * 2 + Math.floor(Math.sqrt(evs.defense) / 4)) * level / 100) + 5,
+                speed: Math.floor(((baseStats.speed + ivs.speed) * 2 + Math.floor(Math.sqrt(evs.speed) / 4)) * level / 100) + 5,
+                special: Math.floor(((baseStats.special + ivs.special) * 2 + Math.floor(Math.sqrt(evs.special) / 4)) * level / 100) + 5
+            };
+            
+            // Update display
+            document.getElementById('calc_hp').textContent = calculatedStats.hp;
+            document.getElementById('calc_attack').textContent = calculatedStats.attack;
+            document.getElementById('calc_defense').textContent = calculatedStats.defense;
+            document.getElementById('calc_speed').textContent = calculatedStats.speed;
+            document.getElementById('calc_special').textContent = calculatedStats.special;
         }
         
         function resetEVs() {
@@ -684,7 +739,7 @@
             document.getElementById('ev_defense').value = 0;
             document.getElementById('ev_speed').value = 0;
             document.getElementById('ev_special').value = 0;
-            updateCalculatedStats();
+            recalculateStats();
         }
         
         function maxEVs() {
@@ -693,7 +748,7 @@
             document.getElementById('ev_defense').value = 65535;
             document.getElementById('ev_speed').value = 65535;
             document.getElementById('ev_special').value = 65535;
-            updateCalculatedStats();
+            recalculateStats();
         }
         
         async function saveChanges() {
@@ -708,10 +763,6 @@
                     level: parseInt(document.getElementById('pokemonLevel').value),
                     status: document.getElementById('pokemonStatus').value,
                     current_hp: parseInt(document.getElementById('pokemonHP').value),
-                    iv_attack: parseInt(document.getElementById('iv_attack').value),
-                    iv_defense: parseInt(document.getElementById('iv_defense').value),
-                    iv_speed: parseInt(document.getElementById('iv_speed').value),
-                    iv_special: parseInt(document.getElementById('iv_special').value),
                     ev_hp: parseInt(document.getElementById('ev_hp').value),
                     ev_attack: parseInt(document.getElementById('ev_attack').value),
                     ev_defense: parseInt(document.getElementById('ev_defense').value),
@@ -770,9 +821,8 @@
         });
         
         // Add event listeners to stat inputs to update calculated stats
-        ['pokemonLevel', 'iv_attack', 'iv_defense', 'iv_speed', 'iv_special', 
-         'ev_hp', 'ev_attack', 'ev_defense', 'ev_speed', 'ev_special'].forEach(id => {
-            document.getElementById(id).addEventListener('input', updateCalculatedStats);
+        ['pokemonLevel', 'ev_hp', 'ev_attack', 'ev_defense', 'ev_speed', 'ev_special'].forEach(id => {
+            document.getElementById(id).addEventListener('input', recalculateStats);
         });
         
         // Load teams on page load

@@ -66,15 +66,7 @@ def create_team_pokemon(team_id):
         # Ensure team_id is set in the data
         data['team_id'] = team_id
         
-        # Validate Individual Values (IVs) - Generation 1 uses 0-15 range
-        iv_fields = ['iv_attack', 'iv_defense', 'iv_speed', 'iv_special']
-        for iv_field in iv_fields:
-            if iv_field in data:
-                iv_value = data[iv_field]
-                if not isinstance(iv_value, int) or iv_value < 0 or iv_value > 15:
-                    return jsonify({"error": f"{iv_field} must be between 0 and 15"}), 400
-        
-        # Validate Effort Values (EVs) - Generation 1 uses 0-65535 range
+        # Validate Effort Values (EVs) - Generation 1 uses 0-65535 range (IVs are set when Pokemon is caught)
         ev_fields = ['ev_hp', 'ev_attack', 'ev_defense', 'ev_speed', 'ev_special']
         for ev_field in ev_fields:
             if ev_field in data:
@@ -159,16 +151,7 @@ def update_team_pokemon(team_id, tp_id):
         if 'current_hp' in data:
             update_data['current_hp'] = data['current_hp']
         
-        # Individual Values (IVs) - validate range 0-15
-        iv_fields = ['iv_attack', 'iv_defense', 'iv_speed', 'iv_special']
-        for iv_field in iv_fields:
-            if iv_field in data:
-                iv_value = data[iv_field]
-                if not isinstance(iv_value, int) or iv_value < 0 or iv_value > 15:
-                    return jsonify({"error": f"{iv_field} must be between 0 and 15"}), 400
-                update_data[iv_field] = iv_value
-        
-        # Effort Values (EVs) - validate range 0-65535
+        # Effort Values (EVs) - validate range 0-65535 (only EVs are editable, not IVs)
         ev_fields = ['ev_hp', 'ev_attack', 'ev_defense', 'ev_speed', 'ev_special']
         for ev_field in ev_fields:
             if ev_field in data:
