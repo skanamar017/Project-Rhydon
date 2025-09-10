@@ -1,42 +1,99 @@
 import requests
 import time
+import sqlite3
 
-# Get all Gen 1 pokemon species from PokeAPI
-gen1_url = "https://pokeapi.co/api/v2/generation/1/"
-gen1 = requests.get(gen1_url).json()
-pokemon_urls = [p['url'] for p in gen1['pokemon_species']]
+def get_move_id_from_db(move_name, cursor):
+    """Get move ID from database by name"""
+    cursor.execute("SELECT id FROM Moves WHERE name = ?", (move_name,))
+    result = cursor.fetchone()
+    return result[0] if result else None
 
-# Build a mapping from move name to move_id (assuming Moves table is already populated)
-# You may need to adjust this if your move IDs are not sequential or start at 1
-move_name_to_id = {}
-move_id = 1
-moves_url = "https://pokeapi.co/api/v2/generation/1/"
-gen1_moves = requests.get(moves_url).json()['moves']
-for m in gen1_moves:
-    move_name_to_id[m['name']] = move_id
-    move_id += 1
+def clear_pokemon_moves_table():
+    """Clear existing PokemonMoves data"""
+    conn = sqlite3.connect('pokemon.db')
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM PokemonMoves")
+    conn.commit()
+    conn.close()
+    print("Cleared existing PokemonMoves data")
 
-insert_lines = []
-for url in pokemon_urls:
-    species = requests.get(url).json()
-    pokedex_number = species['id']
-    poke_url = f"https://pokeapi.co/api/v2/pokemon/{pokedex_number}/"
-    poke = requests.get(poke_url).json()
-    pokemon_id = pokedex_number  # Assumes your Pokemon table uses pokedex_number as id
-    for move in poke['moves']:
-        move_name = move['move']['name']
-        if move_name not in move_name_to_id:
+def main():
+    # Clear existing data
+    clear_pokemon_moves_table()
+    
+    # Connect to database to get move IDs
+    conn = sqlite3.connect('pokemon.db')
+    cursor = conn.cursor()
+    
+    # Get all Gen 1 pokemon species from PokeAPI
+    print("Fetching Gen 1 Pokemon list...")
+    gen1_url = "https://pokeapi.co/api/v2/generation/1/"
+    gen1 = requests.get(gen1_url).json()
+    pokemon_species = gen1['pokemon_species']
+    
+    insert_lines = []
+    total_pokemon = len(pokemon_species)
+    
+    for i, species_data in enumerate(pokemon_species):
+        pokedex_number = species_data['url'].split('/')[-2]
+        print(f"Processing Pokemon {i+1}/{total_pokemon}: Pokedex #{pokedex_number}")
+        
+        # Get the Pokemon data
+        poke_url = f"https://pokeapi.co/api/v2/pokemon/{pokedex_number}/"
+        try:
+            poke = requests.get(poke_url).json()
+        except:
+            print(f"Error fetching data for Pokemon #{pokedex_number}")
             continue
-        for vgd in move['version_group_details']:
-            vg = vgd['version_group']['name']
-            if vg in ['red-blue', 'yellow']:
-                method = vgd['move_learn_method']['name']
-                level = vgd['level_learned_at']
-                # Only include moves that are learnable in Gen 1
-                insert_lines.append(f"INSERT INTO PokemonMoves (pokemon_id, move_id, level_learned) VALUES ({pokemon_id}, {move_name_to_id[move_name]}, {level}); -- {move_name} ({method})")
-    time.sleep(0.2)  # Be nice to the API
+            
+        pokemon_id = int(pokedex_number)  # Uses pokedex_number as pokemon_id
+        
+        for move_data in poke['moves']:
+            move_name = move_data['move']['name']
+            move_id = get_move_id_from_db(move_name, cursor)
+            
+            if not move_id:
+                continue  # Skip moves not in our database
+                
+            # Check version group details for Red/Blue specifically
+            for vgd in move_data['version_group_details']:
+                version_group = vgd['version_group']['name']
+                
+                # Only process Red/Blue version data
+                if version_group == 'red-blue':
+                    method = vgd['move_learn_method']['name']
+                    level = vgd['level_learned_at']
+                    
+                    # Include level-up moves and TM/HM moves (level 0)
+                    if method in ['level-up', 'machine']:
+                        insert_lines.append(f"INSERT INTO PokemonMoves (pokemon_id, move_id, level_learned) VALUES ({pokemon_id}, {move_id}, {level}); -- {move_name} ({method})")
+        
+        time.sleep(0.1)  # Be nice to the API
+    
+    conn.close()
+    
+    # Write SQL file
+    with open('gen1_pokemon_moves_inserts_corrected.sql', 'w') as f:
+        f.write('\n'.join(insert_lines))
+    
+    print(f"Generated {len(insert_lines)} SQL insert statements for Gen 1 PokemonMoves.")
+    
+    # Execute the inserts
+    print("Inserting data into database...")
+    conn = sqlite3.connect('pokemon.db')
+    cursor = conn.cursor()
+    
+    for line in insert_lines:
+        sql_command = line.split(';')[0] + ';'  # Remove comments
+        try:
+            cursor.execute(sql_command)
+        except Exception as e:
+            print(f"Error executing: {sql_command}")
+            print(f"Error: {e}")
+    
+    conn.commit()
+    conn.close()
+    print("Database updated successfully!")
 
-with open('gen1_pokemon_moves_inserts.sql', 'w') as f:
-    f.write('\n'.join(insert_lines))
-
-print(f"Generated {len(insert_lines)} SQL insert statements for Gen 1 PokemonMoves.")
+if __name__ == "__main__":
+    main()

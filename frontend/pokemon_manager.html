@@ -101,12 +101,10 @@
             color: #495057;
         }
         
-        .stat-input {
-            width: 80px;
-            padding: 5px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            text-align: center;
+        .stat-display {
+            font-weight: bold;
+            color: #495057;
+            min-width: 80px;
         }
         
         .stat-range {
@@ -325,27 +323,28 @@
                         <div class="stat-group">
                             <div class="stat-row">
                                 <span class="stat-label">Attack:</span>
-                                <input type="number" id="iv_attack" class="stat-input" min="0" max="15" value="0">
-                                <span class="stat-range">(0-15)</span>
+                                <span id="iv_attack_display" class="stat-display">0</span>
                             </div>
                             <div class="stat-row">
                                 <span class="stat-label">Defense:</span>
-                                <input type="number" id="iv_defense" class="stat-input" min="0" max="15" value="0">
-                                <span class="stat-range">(0-15)</span>
+                                <span id="iv_defense_display" class="stat-display">0</span>
                             </div>
                             <div class="stat-row">
                                 <span class="stat-label">Speed:</span>
-                                <input type="number" id="iv_speed" class="stat-input" min="0" max="15" value="0">
-                                <span class="stat-range">(0-15)</span>
+                                <span id="iv_speed_display" class="stat-display">0</span>
                             </div>
                             <div class="stat-row">
                                 <span class="stat-label">Special:</span>
-                                <input type="number" id="iv_special" class="stat-input" min="0" max="15" value="0">
-                                <span class="stat-range">(0-15)</span>
+                                <span id="iv_special_display" class="stat-display">0</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">HP (calculated):</span>
+                                <span id="iv_hp_display" class="stat-display">0</span>
                             </div>
                         </div>
-                        <button onclick="randomizeIVs()" class="btn-secondary">Randomize IVs</button>
-                        <button onclick="maxIVs()" class="btn">Max IVs</button>
+                        <p style="color: #6c757d; font-size: 14px; font-style: italic;">
+                            IVs are randomly determined when Pokemon are caught and cannot be changed.
+                        </p>
                     </div>
                     
                     <div class="stat-section">
