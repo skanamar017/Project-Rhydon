@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokemon Team & Stats Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .team-section {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+        }
+        
+        .pokemon-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f9f9f9;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .pokemon-card:hover {
+            background: #e9e9e9;
+        }
+        
+        .pokemon-card.selected {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+        
+        .pokemon-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            font-size: 18px;
+            color: #333;
+        }
+        
+        .pokemon-details {
+            margin-top: 10px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 14px;
+        }
+        
+        .stats-editor {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 20px;
+        }
+        
+        .stat-section {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        
+        .stat-section h3 {
+            margin-top: 0;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 10px;
+        }
+        
+        .stat-group {
+            margin-bottom: 15px;
+        }
+        
+        .stat-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 8px 0;
+        }
+        
+        .stat-label {
+            font-weight: bold;
+            min-width: 80px;
+            color: #495057;
+        }
+        
+        .stat-input {
+            width: 80px;
+            padding: 5px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        .stat-range {
+            font-size: 12px;
+            color: #6c757d;
+            margin-left: 10px;
+        }
+        
+        .basic-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .info-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .info-group label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #495057;
+        }
+        
+        .info-group input, .info-group select {
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+        }
+        
+        .btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        
+        .btn-success {
+            background-color: #28a745;
+        }
+        
+        .btn-success:hover {
+            background-color: #1e7e34;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+        
+        .btn-danger {
+            background-color: #dc3545;
+        }
+        
+        .btn-danger:hover {
+            background-color: #bd2130;
+        }
+        
+        .calculated-stats {
+            background: #e7f3ff;
+            border: 1px solid #b3d7ff;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .calculated-stats h4 {
+            margin-top: 0;
+            color: #0056b3;
+        }
+        
+        .calc-stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+        
+        .type-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            margin: 2px;
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        
+        #pokemonDetails {
+            display: none;
+        }
+        
+        .moves-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #dee2e6;
+        }
+        
+        .move-slot {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+        }
+        
+        .move-slot.empty {
+            background: #f8f9fa;
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        .move-info {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 10px;
+            font-size: 14px;
+            align-items: center;
+        }
+        
+        .move-name {
+            font-weight: bold;
+        }
+        
+        .move-type {
+            text-align: center;
+            padding: 3px 8px;
+            border-radius: 3px;
+            color: white;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Pokemon Team & Stats Manager</h1>
+    
+    <div class="container">
+        <h2>Team Selection</h2>
+        <select id="teamSelect">
+            <option value="">Select a team...</option>
+        </select>
+        <button onclick="loadTeams()" class="btn-secondary">Refresh Teams</button>
+    </div>
+    
+    <div class="container team-section" id="teamDetails" style="display: none;">
+        <div>
+            <h3 id="teamName">Team Name</h3>
+            <div id="teamPokemon"></div>
+        </div>
+        
+        <div>
+            <h3>Pokemon Editor</h3>
+            <div id="pokemonDetails">
+                <div class="basic-info">
+                    <div class="info-group">
+                        <label for="pokemonNickname">Nickname:</label>
+                        <input type="text" id="pokemonNickname" placeholder="Enter nickname">
+                    </div>
+                    <div class="info-group">
+                        <label for="pokemonLevel">Level:</label>
+                        <input type="number" id="pokemonLevel" min="1" max="100" value="1">
+                    </div>
+                    <div class="info-group">
+                        <label for="pokemonStatus">Status:</label>
+                        <select id="pokemonStatus">
+                            <option value="Healthy">Healthy</option>
+                            <option value="Poisoned">Poisoned</option>
+                            <option value="Burned">Burned</option>
+                            <option value="Frozen">Frozen</option>
+                            <option value="Paralyzed">Paralyzed</option>
+                            <option value="Asleep">Asleep</option>
+                        </select>
+                    </div>
+                    <div class="info-group">
+                        <label for="pokemonHP">Current HP:</label>
+                        <input type="number" id="pokemonHP" min="1" placeholder="Current HP">
+                    </div>
+                </div>
+                
+                <div class="stats-editor">
+                    <div class="stat-section">
+                        <h3>Individual Values (IVs)</h3>
+                        <div class="stat-group">
+                            <div class="stat-row">
+                                <span class="stat-label">Attack:</span>
+                                <input type="number" id="iv_attack" class="stat-input" min="0" max="15" value="0">
+                                <span class="stat-range">(0-15)</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Defense:</span>
+                                <input type="number" id="iv_defense" class="stat-input" min="0" max="15" value="0">
+                                <span class="stat-range">(0-15)</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Speed:</span>
+                                <input type="number" id="iv_speed" class="stat-input" min="0" max="15" value="0">
+                                <span class="stat-range">(0-15)</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Special:</span>
+                                <input type="number" id="iv_special" class="stat-input" min="0" max="15" value="0">
+                                <span class="stat-range">(0-15)</span>
+                            </div>
+                        </div>
+                        <button onclick="randomizeIVs()" class="btn-secondary">Randomize IVs</button>
+                        <button onclick="maxIVs()" class="btn">Max IVs</button>
+                    </div>
+                    
+                    <div class="stat-section">
+                        <h3>Effort Values (EVs)</h3>
+                        <div class="stat-group">
+                            <div class="stat-row">
+                                <span class="stat-label">HP:</span>
+                                <input type="number" id="ev_hp" class="stat-input" min="0" max="65535" value="0">
+                                <span class="stat-range">(0-65535)</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Attack:</span>
+                                <input type="number" id="ev_attack" class="stat-input" min="0" max="65535" value="0">
+                                <span class="stat-range">(0-65535)</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Defense:</span>
+                                <input type="number" id="ev_defense" class="stat-input" min="0" max="65535" value="0">
+                                <span class="stat-range">(0-65535)</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Speed:</span>
+                                <input type="number" id="ev_speed" class="stat-input" min="0" max="65535" value="0">
+                                <span class="stat-range">(0-65535)</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Special:</span>
+                                <input type="number" id="ev_special" class="stat-input" min="0" max="65535" value="0">
+                                <span class="stat-range">(0-65535)</span>
+                            </div>
+                        </div>
+                        <button onclick="resetEVs()" class="btn-secondary">Reset EVs</button>
+                        <button onclick="maxEVs()" class="btn">Max EVs</button>
+                    </div>
+                </div>
+                
+                <div class="calculated-stats">
+                    <h4>Calculated Stats</h4>
+                    <div id="calculatedStatsDisplay">
+                        <div class="calc-stat-row">
+                            <span>HP:</span>
+                            <span id="calc_hp">-</span>
+                        </div>
+                        <div class="calc-stat-row">
+                            <span>Attack:</span>
+                            <span id="calc_attack">-</span>
+                        </div>
+                        <div class="calc-stat-row">
+                            <span>Defense:</span>
+                            <span id="calc_defense">-</span>
+                        </div>
+                        <div class="calc-stat-row">
+                            <span>Speed:</span>
+                            <span id="calc_speed">-</span>
+                        </div>
+                        <div class="calc-stat-row">
+                            <span>Special:</span>
+                            <span id="calc_special">-</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="moves-section">
+                    <h4>Moves</h4>
+                    <div id="movesDisplay"></div>
+                    <button onclick="openMoveManager()" class="btn">Manage Moves</button>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <button onclick="saveChanges()" class="btn-success">Save Changes</button>
+                    <button onclick="cancelChanges()" class="btn-secondary">Cancel</button>
+                </div>
+                
+                <div id="messageArea"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://127.0.0.1:5001';
+        let currentTeamId = null;
+        let currentPokemonId = null;
+        let currentPokemon = null;
+        
+        // Type colors for visual styling
+        const typeColors = {
+            'Normal': '#A8A878',
+            'Fire': '#F08030',
+            'Water': '#6890F0',
+            'Electric': '#F8D030',
+            'Grass': '#78C850',
+            'Ice': '#98D8D8',
+            'Fighting': '#C03028',
+            'Poison': '#A040A0',
+            'Ground': '#E0C068',
+            'Flying': '#A890F0',
+            'Psychic': '#F85888',
+            'Bug': '#A8B820',
+            'Rock': '#B8A038',
+            'Ghost': '#705898',
+            'Dragon': '#7038F8'
+        };
+        
+        async function loadTeams() {
+            try {
+                const response = await fetch(`${BASE_URL}/Teams/`);
+                const teams = await response.json();
+                
+                const teamSelect = document.getElementById('teamSelect');
+                teamSelect.innerHTML = '<option value="">Select a team...</option>';
+                
+                teams.forEach(team => {
+                    const option = document.createElement('option');
+                    option.value = team.id;
+                    option.textContent = team.name;
+                    teamSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading teams:', error);
+                showMessage('Error loading teams: ' + error.message, 'error');
+            }
+        }
+        
+        async function loadTeamDetails(teamId) {
+            if (!teamId) {
+                document.getElementById('teamDetails').style.display = 'none';
+                return;
+            }
+            
+            try {
+                currentTeamId = teamId;
+                
+                // Load team info
+                const teamResponse = await fetch(`${BASE_URL}/Teams/${teamId}`);
+                const team = await teamResponse.json();
+                document.getElementById('teamName').textContent = team.name;
+                
+                // Load team pokemon
+                const pokemonResponse = await fetch(`${BASE_URL}/Teams/${teamId}/TeamPokemon/`);
+                const pokemon = await pokemonResponse.json();
+                
+                displayTeamPokemon(pokemon);
+                document.getElementById('teamDetails').style.display = 'grid';
+                
+            } catch (error) {
+                console.error('Error loading team details:', error);
+                showMessage('Error loading team details: ' + error.message, 'error');
+            }
+        }
+        
+        function displayTeamPokemon(pokemon) {
+            const container = document.getElementById('teamPokemon');
+            container.innerHTML = '';
+            
+            if (pokemon.length === 0) {
+                container.innerHTML = '<p>No Pokemon on this team.</p>';
+                return;
+            }
+            
+            pokemon.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'pokemon-card';
+                card.onclick = () => selectPokemon(p);
+                
+                const type2Text = p.type2 ? `/${p.type2}` : '';
+                const typeBadges = `
+                    <span class="type-badge" style="background-color: ${typeColors[p.type1] || '#666'}">${p.type1}</span>
+                    ${p.type2 ? `<span class="type-badge" style="background-color: ${typeColors[p.type2] || '#666'}">${p.type2}</span>` : ''}
+                `;
+                
+                card.innerHTML = `
+                    <div class="pokemon-header">
+                        <span>${p.nickname || p.pokemon_name}</span>
+                        <span>Lv. ${p.level}</span>
+                    </div>
+                    <div class="pokemon-details">
+                        <div>Species: ${p.pokemon_name}</div>
+                        <div>Type: ${typeBadges}</div>
+                        <div>HP: ${p.calculated_hp || p.current_hp}</div>
+                        <div>Status: ${p.status}</div>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+        
+        function selectPokemon(pokemon) {
+            // Remove previous selection
+            document.querySelectorAll('.pokemon-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Add selection to clicked card
+            event.currentTarget.classList.add('selected');
+            
+            currentPokemon = pokemon;
+            currentPokemonId = pokemon.id;
+            
+            loadPokemonEditor(pokemon);
+        }
+        
+        function loadPokemonEditor(pokemon) {
+            // Load basic info
+            document.getElementById('pokemonNickname').value = pokemon.nickname || '';
+            document.getElementById('pokemonLevel').value = pokemon.level;
+            document.getElementById('pokemonStatus').value = pokemon.status || 'Healthy';
+            document.getElementById('pokemonHP').value = pokemon.current_hp || '';
+            
+            // Load IVs
+            document.getElementById('iv_attack').value = pokemon.iv_attack || 0;
+            document.getElementById('iv_defense').value = pokemon.iv_defense || 0;
+            document.getElementById('iv_speed').value = pokemon.iv_speed || 0;
+            document.getElementById('iv_special').value = pokemon.iv_special || 0;
+            
+            // Load EVs
+            document.getElementById('ev_hp').value = pokemon.ev_hp || 0;
+            document.getElementById('ev_attack').value = pokemon.ev_attack || 0;
+            document.getElementById('ev_defense').value = pokemon.ev_defense || 0;
+            document.getElementById('ev_speed').value = pokemon.ev_speed || 0;
+            document.getElementById('ev_special').value = pokemon.ev_special || 0;
+            
+            // Update calculated stats
+            updateCalculatedStats();
+            
+            // Load moves
+            loadMoves(pokemon);
+            
+            // Show editor
+            document.getElementById('pokemonDetails').style.display = 'block';
+        }
+        
+        function loadMoves(pokemon) {
+            const container = document.getElementById('movesDisplay');
+            const moves = [
+                { id: pokemon.move1_id, slot: 1 },
+                { id: pokemon.move2_id, slot: 2 },
+                { id: pokemon.move3_id, slot: 3 },
+                { id: pokemon.move4_id, slot: 4 }
+            ];
+            
+            container.innerHTML = '';
+            
+            moves.forEach(async (moveSlot) => {
+                const slot = document.createElement('div');
+                slot.className = moveSlot.id ? 'move-slot' : 'move-slot empty';
+                
+                if (moveSlot.id) {
+                    try {
+                        const response = await fetch(`${BASE_URL}/moves/${moveSlot.id}`);
+                        const move = await response.json();
+                        
+                        slot.innerHTML = `
+                            <div class="move-info">
+                                <span class="move-name">${move.name}</span>
+                                <span class="move-type" style="background-color: ${typeColors[move.type] || '#666'}">${move.type}</span>
+                                <span>Power: ${move.power || '-'}</span>
+                                <span>PP: ${move.pp}</span>
+                            </div>
+                        `;
+                    } catch (error) {
+                        slot.innerHTML = `<div class="move-info">Error loading move</div>`;
+                    }
+                } else {
+                    slot.innerHTML = `<div class="move-info">Empty move slot</div>`;
+                }
+                
+                container.appendChild(slot);
+            });
+        }
+        
+        function updateCalculatedStats() {
+            if (!currentPokemon) return;
+            
+            const level = parseInt(document.getElementById('pokemonLevel').value) || 1;
+            const ivs = {
+                attack: parseInt(document.getElementById('iv_attack').value) || 0,
+                defense: parseInt(document.getElementById('iv_defense').value) || 0,
+                speed: parseInt(document.getElementById('iv_speed').value) || 0,
+                special: parseInt(document.getElementById('iv_special').value) || 0
+            };
+            const evs = {
+                hp: parseInt(document.getElementById('ev_hp').value) || 0,
+                attack: parseInt(document.getElementById('ev_attack').value) || 0,
+                defense: parseInt(document.getElementById('ev_defense').value) || 0,
+                speed: parseInt(document.getElementById('ev_speed').value) || 0,
+                special: parseInt(document.getElementById('ev_special').value) || 0
+            };
+            
+            // Calculate HP IV from other IVs (Gen 1 mechanic)
+            const hpIV = ((ivs.attack % 2) * 8) + ((ivs.defense % 2) * 4) + ((ivs.speed % 2) * 2) + (ivs.special % 2);
+            
+            // Calculate stats using Gen 1 formula
+            const baseStats = {
+                hp: currentPokemon.base_hp,
+                attack: currentPokemon.base_attack,
+                defense: currentPokemon.base_defense,
+                speed: currentPokemon.base_speed,
+                special: currentPokemon.base_special
+            };
+            
+            const calculatedStats = {
+                hp: Math.floor(((baseStats.hp + hpIV) * 2 + Math.floor(Math.sqrt(evs.hp) / 4)) * level / 100) + level + 10,
+                attack: Math.floor(((baseStats.attack + ivs.attack) * 2 + Math.floor(Math.sqrt(evs.attack) / 4)) * level / 100) + 5,
+                defense: Math.floor(((baseStats.defense + ivs.defense) * 2 + Math.floor(Math.sqrt(evs.defense) / 4)) * level / 100) + 5,
+                speed: Math.floor(((baseStats.speed + ivs.speed) * 2 + Math.floor(Math.sqrt(evs.speed) / 4)) * level / 100) + 5,
+                special: Math.floor(((baseStats.special + ivs.special) * 2 + Math.floor(Math.sqrt(evs.special) / 4)) * level / 100) + 5
+            };
+            
+            // Update display
+            document.getElementById('calc_hp').textContent = calculatedStats.hp;
+            document.getElementById('calc_attack').textContent = calculatedStats.attack;
+            document.getElementById('calc_defense').textContent = calculatedStats.defense;
+            document.getElementById('calc_speed').textContent = calculatedStats.speed;
+            document.getElementById('calc_special').textContent = calculatedStats.special;
+        }
+        
+        function randomizeIVs() {
+            document.getElementById('iv_attack').value = Math.floor(Math.random() * 16);
+            document.getElementById('iv_defense').value = Math.floor(Math.random() * 16);
+            document.getElementById('iv_speed').value = Math.floor(Math.random() * 16);
+            document.getElementById('iv_special').value = Math.floor(Math.random() * 16);
+            updateCalculatedStats();
+        }
+        
+        function maxIVs() {
+            document.getElementById('iv_attack').value = 15;
+            document.getElementById('iv_defense').value = 15;
+            document.getElementById('iv_speed').value = 15;
+            document.getElementById('iv_special').value = 15;
+            updateCalculatedStats();
+        }
+        
+        function resetEVs() {
+            document.getElementById('ev_hp').value = 0;
+            document.getElementById('ev_attack').value = 0;
+            document.getElementById('ev_defense').value = 0;
+            document.getElementById('ev_speed').value = 0;
+            document.getElementById('ev_special').value = 0;
+            updateCalculatedStats();
+        }
+        
+        function maxEVs() {
+            document.getElementById('ev_hp').value = 65535;
+            document.getElementById('ev_attack').value = 65535;
+            document.getElementById('ev_defense').value = 65535;
+            document.getElementById('ev_speed').value = 65535;
+            document.getElementById('ev_special').value = 65535;
+            updateCalculatedStats();
+        }
+        
+        async function saveChanges() {
+            if (!currentPokemonId) {
+                showMessage('No Pokemon selected', 'error');
+                return;
+            }
+            
+            try {
+                const updateData = {
+                    nickname: document.getElementById('pokemonNickname').value,
+                    level: parseInt(document.getElementById('pokemonLevel').value),
+                    status: document.getElementById('pokemonStatus').value,
+                    current_hp: parseInt(document.getElementById('pokemonHP').value),
+                    iv_attack: parseInt(document.getElementById('iv_attack').value),
+                    iv_defense: parseInt(document.getElementById('iv_defense').value),
+                    iv_speed: parseInt(document.getElementById('iv_speed').value),
+                    iv_special: parseInt(document.getElementById('iv_special').value),
+                    ev_hp: parseInt(document.getElementById('ev_hp').value),
+                    ev_attack: parseInt(document.getElementById('ev_attack').value),
+                    ev_defense: parseInt(document.getElementById('ev_defense').value),
+                    ev_speed: parseInt(document.getElementById('ev_speed').value),
+                    ev_special: parseInt(document.getElementById('ev_special').value)
+                };
+                
+                const response = await fetch(`${BASE_URL}/Teams/${currentTeamId}/TeamPokemon/${currentPokemonId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updateData)
+                });
+                
+                if (response.ok) {
+                    showMessage('Pokemon updated successfully!', 'success');
+                    loadTeamDetails(currentTeamId); // Refresh the team display
+                } else {
+                    const error = await response.json();
+                    showMessage('Error updating Pokemon: ' + error.error, 'error');
+                }
+                
+            } catch (error) {
+                console.error('Error saving changes:', error);
+                showMessage('Error saving changes: ' + error.message, 'error');
+            }
+        }
+        
+        function cancelChanges() {
+            if (currentPokemon) {
+                loadPokemonEditor(currentPokemon); // Reload original data
+                showMessage('Changes cancelled', 'success');
+            }
+        }
+        
+        function openMoveManager() {
+            // Open the move manager in a new tab/window
+            window.open('move_manager.html', '_blank');
+        }
+        
+        function showMessage(message, type) {
+            const messageArea = document.getElementById('messageArea');
+            const messageClass = type === 'error' ? 'error-message' : 'success-message';
+            messageArea.innerHTML = `<div class="${messageClass}">${message}</div>`;
+            
+            // Clear message after 5 seconds
+            setTimeout(() => {
+                messageArea.innerHTML = '';
+            }, 5000);
+        }
+        
+        // Event listeners
+        document.getElementById('teamSelect').addEventListener('change', function() {
+            loadTeamDetails(this.value);
+        });
+        
+        // Add event listeners to stat inputs to update calculated stats
+        ['pokemonLevel', 'iv_attack', 'iv_defense', 'iv_speed', 'iv_special', 
+         'ev_hp', 'ev_attack', 'ev_defense', 'ev_speed', 'ev_special'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updateCalculatedStats);
+        });
+        
+        // Load teams on page load
+        loadTeams();
+    </script>
+</body>
+</html>
