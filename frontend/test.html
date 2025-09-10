@@ -236,7 +236,7 @@
                 
                 select.innerHTML = '<option value="">Choose a Pokemon</option>';
                 pokemon.forEach(p => {
-                    select.innerHTML += `<option value="${p.id}">${p.name} (#${p.pokedex_number})</option>`;
+                    select.innerHTML += `<option value="${p.pokedex_number}">${p.name} (#${p.pokedex_number})</option>`;
                 });
             } catch (error) {
                 console.error('Error loading Pokemon list:', error);

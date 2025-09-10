@@ -161,3 +161,34 @@ REFERENCES Moves
 REFERENCES Moves
 (id)
 );
+
+
+
+-- Create Evolution table to track Pokemon evolution chains
+CREATE TABLE
+IF NOT EXISTS Evolution
+(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    from_pokemon_id INTEGER NOT NULL,
+    to_pokemon_id INTEGER NOT NULL,
+    evolution_method TEXT,
+    minimum_level INTEGER,
+    evolution_item TEXT,
+    trade_required BOOLEAN DEFAULT FALSE,
+    FOREIGN KEY
+(from_pokemon_id) REFERENCES Pokemon
+(pokedex_number),
+    FOREIGN KEY
+(to_pokemon_id) REFERENCES Pokemon
+(pokedex_number),
+    UNIQUE
+(from_pokemon_id, to_pokemon_id)
+);
+
+-- Index for faster lookups
+CREATE INDEX
+IF NOT EXISTS idx_evolution_from ON Evolution
+(from_pokemon_id);
+CREATE INDEX
+IF NOT EXISTS idx_evolution_to ON Evolution
+(to_pokemon_id);

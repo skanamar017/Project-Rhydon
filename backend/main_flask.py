@@ -308,6 +308,114 @@ def get_pokemon_moves_at_level(pokemon_id, level):
         
         return jsonify(result), 200
 
+@app.route("/Pokemon/<int:pokemon_id>/moves/with_evolutions", methods=["GET"])
+def get_pokemon_moves_with_evolutions(pokemon_id):
+    """Get all moves for a Pokemon including those learned from previous evolutions."""
+    max_level = request.args.get("max_level", type=int)
+    move_type = request.args.get("type")  # level-up, tm-hm, or all
+    
+    with sqlite3.connect("pokemon.db") as conn:
+        conn.row_factory = sqlite3.Row
+        
+        # Get evolution chain for this Pokemon
+        def get_evolution_chain(current_id: int) -> List[int]:
+            """Get all pre-evolutions and current Pokemon"""
+            chain = []
+            visited = set()
+            
+            def find_pre_evolutions(curr_id: int):
+                if curr_id in visited:
+                    return
+                visited.add(curr_id)
+                
+                # Find what this Pokemon evolves from
+                cursor = conn.execute("""
+                    SELECT from_pokemon_id FROM Evolution 
+                    WHERE to_pokemon_id = ?
+                """, (curr_id,))
+                
+                pre_evolutions = cursor.fetchall()
+                for (pre_evo_id,) in pre_evolutions:
+                    find_pre_evolutions(pre_evo_id)
+                    if pre_evo_id not in chain:
+                        chain.append(pre_evo_id)
+                
+                if curr_id not in chain:
+                    chain.append(curr_id)
+            
+            find_pre_evolutions(current_id)
+            return chain
+        
+        # Get full evolution chain
+        evolution_chain = get_evolution_chain(pokemon_id)
+        
+        # Base query for moves from entire evolution chain
+        query = """
+        SELECT DISTINCT
+            pm.move_id,
+            m.name as move_name,
+            pm.level_learned,
+            m.type as move_type,
+            m.power,
+            m.accuracy,
+            m.pp,
+            p.name as learned_from_pokemon,
+            p.pokedex_number as learned_from_id,
+            CASE 
+                WHEN pm.level_learned = 0 THEN 'TM/HM'
+                ELSE 'Level-up'
+            END as learn_method
+        FROM PokemonMoves pm
+        JOIN Moves m ON pm.move_id = m.id
+        JOIN Pokemon p ON pm.pokemon_id = p.pokedex_number
+        WHERE pm.pokemon_id IN ({})
+        """.format(','.join(['?'] * len(evolution_chain)))
+        
+        params = evolution_chain[:]
+        
+        # Add filters
+        if max_level is not None:
+            query += " AND (pm.level_learned <= ? OR pm.level_learned = 0)"
+            params.append(max_level)
+        
+        if move_type == "level-up":
+            query += " AND pm.level_learned > 0"
+        elif move_type == "tm-hm":
+            query += " AND pm.level_learned = 0"
+        
+        query += " ORDER BY pm.level_learned, m.name"
+        
+        cursor = conn.execute(query, params)
+        moves = cursor.fetchall()
+        
+        # Get Pokemon name for response
+        pokemon_cursor = conn.execute("SELECT name FROM Pokemon WHERE pokedex_number = ?", [pokemon_id])
+        pokemon_result = pokemon_cursor.fetchone()
+        pokemon_name = pokemon_result[0] if pokemon_result else f"Pokemon #{pokemon_id}"
+        
+        # Get evolution chain names
+        chain_names = {}
+        for evo_id in evolution_chain:
+            cursor = conn.execute("SELECT name FROM Pokemon WHERE pokedex_number = ?", [evo_id])
+            result = cursor.fetchone()
+            if result:
+                chain_names[evo_id] = result[0]
+        
+        result = {
+            "pokemon_id": pokemon_id,
+            "pokemon_name": pokemon_name,
+            "evolution_chain": [{"id": evo_id, "name": chain_names.get(evo_id, f"Pokemon #{evo_id}")} 
+                              for evo_id in evolution_chain],
+            "filters": {
+                "max_level": max_level,
+                "type": move_type
+            },
+            "total_moves": len(moves),
+            "moves": [dict(move) for move in moves]
+        }
+        
+        return jsonify(result), 200
+
 @app.route("/pokemon/<int:pokemon_id>/base_stats", methods=["GET"])
 def get_pokemon_base_stats_route(pokemon_id: int):
     """Get base stats for a Pokémon species"""
