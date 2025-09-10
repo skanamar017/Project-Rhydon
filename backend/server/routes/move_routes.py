@@ -4,8 +4,7 @@ Flask route handlers for move management endpoints.
 
 from flask import Blueprint, request, jsonify
 import sqlite3
-from move_service import MoveService
-from models import Gen1StatCalculator
+from database import Gen1StatCalculator
 
 move_bp = Blueprint('moves', __name__)
 
@@ -26,7 +25,6 @@ def get_all_pokemon():
 @move_bp.route("/Pokemon/<int:pokemon_id>/moves", methods=["GET"])
 def get_pokemon_moves(pokemon_id):
     """Get all moves for a specific Pokemon, optionally filtered by max level."""
-    move_service = MoveService()
     max_level = request.args.get("max_level", type=int)
     move_type = request.args.get("type")
     
@@ -83,35 +81,111 @@ def get_pokemon_moves(pokemon_id):
 
 @move_bp.route("/Pokemon/<int:pokemon_id>/moves/with_evolutions", methods=["GET"])
 def get_pokemon_moves_with_evolutions(pokemon_id):
-    """Get all moves for a Pokemon including those from previous evolutions."""
-    move_service = MoveService()
-    result = move_service.get_pokemon_moves_with_evolutions(pokemon_id)
-    
-    # Apply filters if provided
+    """Get all moves for a Pokemon including those learned from previous evolutions."""
     max_level = request.args.get("max_level", type=int)
-    move_type = request.args.get("type")
+    move_type = request.args.get("type")  # level-up, tm-hm, or all
     
-    if max_level is not None or move_type:
-        filtered_moves = []
-        for move in result["moves"]:
-            # Apply level filter
-            if max_level is not None:
-                if move["level_learned"] > max_level and move["level_learned"] != 0:
-                    continue
-            
-            # Apply type filter
-            if move_type == "level-up" and move["level_learned"] == 0:
-                continue
-            elif move_type == "tm-hm" and move["level_learned"] != 0:
-                continue
-            
-            filtered_moves.append(move)
+    with sqlite3.connect("pokemon.db") as conn:
+        conn.row_factory = sqlite3.Row
         
-        result["moves"] = filtered_moves
-        result["total_moves"] = len(filtered_moves)
-    
-    result["filters"] = {"max_level": max_level, "type": move_type}
-    return jsonify(result), 200
+        # Get evolution chain for this Pokemon
+        def get_evolution_chain(current_id: int) -> list:
+            """Get all pre-evolutions and current Pokemon"""
+            chain = []
+            visited = set()
+            
+            def find_pre_evolutions(curr_id: int):
+                if curr_id in visited:
+                    return
+                visited.add(curr_id)
+                
+                # Find what this Pokemon evolves from
+                cursor = conn.execute("""
+                    SELECT from_pokemon_id FROM Evolution 
+                    WHERE to_pokemon_id = ?
+                """, (curr_id,))
+                
+                pre_evolutions = cursor.fetchall()
+                for (pre_evo_id,) in pre_evolutions:
+                    find_pre_evolutions(pre_evo_id)
+                    if pre_evo_id not in chain:
+                        chain.append(pre_evo_id)
+                
+                if curr_id not in chain:
+                    chain.append(curr_id)
+            
+            find_pre_evolutions(current_id)
+            return chain
+        
+        # Get full evolution chain
+        evolution_chain = get_evolution_chain(pokemon_id)
+        
+        # Base query for moves from entire evolution chain
+        query = """
+        SELECT DISTINCT
+            pm.move_id,
+            m.name as move_name,
+            pm.level_learned,
+            m.type as move_type,
+            m.power,
+            m.accuracy,
+            m.pp,
+            p.name as learned_from_pokemon,
+            p.pokedex_number as learned_from_id,
+            CASE 
+                WHEN pm.level_learned = 0 THEN 'TM/HM'
+                ELSE 'Level-up'
+            END as learn_method
+        FROM PokemonMoves pm
+        JOIN Moves m ON pm.move_id = m.id
+        JOIN Pokemon p ON pm.pokemon_id = p.pokedex_number
+        WHERE pm.pokemon_id IN ({})
+        """.format(','.join(['?'] * len(evolution_chain)))
+        
+        params = evolution_chain[:]
+        
+        # Add filters
+        if max_level is not None:
+            query += " AND (pm.level_learned <= ? OR pm.level_learned = 0)"
+            params.append(max_level)
+        
+        if move_type == "level-up":
+            query += " AND pm.level_learned > 0"
+        elif move_type == "tm-hm":
+            query += " AND pm.level_learned = 0"
+        
+        query += " ORDER BY pm.level_learned, m.name"
+        
+        cursor = conn.execute(query, params)
+        moves = cursor.fetchall()
+        
+        # Get Pokemon name for response
+        pokemon_cursor = conn.execute("SELECT name FROM Pokemon WHERE pokedex_number = ?", [pokemon_id])
+        pokemon_result = pokemon_cursor.fetchone()
+        pokemon_name = pokemon_result[0] if pokemon_result else f"Pokemon #{pokemon_id}"
+        
+        # Get evolution chain names
+        chain_names = {}
+        for evo_id in evolution_chain:
+            cursor = conn.execute("SELECT name FROM Pokemon WHERE pokedex_number = ?", [evo_id])
+            result = cursor.fetchone()
+            if result:
+                chain_names[evo_id] = result[0]
+        
+        result = {
+            "pokemon_id": pokemon_id,
+            "pokemon_name": pokemon_name,
+            "evolution_chain": [{"id": evo_id, "name": chain_names.get(evo_id, f"Pokemon #{evo_id}")} 
+                              for evo_id in evolution_chain],
+            "filters": {
+                "max_level": max_level,
+                "type": move_type
+            },
+            "total_moves": len(moves),
+            "moves": [dict(move) for move in moves]
+        }
+        
+        return jsonify(result), 200
 
 @move_bp.route("/Pokemon/<int:pokemon_id>/moves/level/<int:level>", methods=["GET"])
 def get_pokemon_moves_at_level(pokemon_id, level):
@@ -154,7 +228,7 @@ def get_pokemon_moves_at_level(pokemon_id, level):
 @move_bp.route("/pokemon/<int:pokemon_id>/base_stats", methods=["GET"])
 def get_pokemon_base_stats_route(pokemon_id: int):
     """Get base stats for a Pokémon species"""
-    from database_service import PokemonDatabase
+    from database import PokemonDatabase
     db = PokemonDatabase()
     base_stats = db.get_pokemon_base_stats(pokemon_id)
     if base_stats:
@@ -185,9 +259,10 @@ def get_available_moves(pokemon_id: int):
     if not level:
         return jsonify({"error": "Level parameter is required"}), 400
     
-    move_service = MoveService()
+    from database import PokemonDatabase
+    db = PokemonDatabase()
     try:
-        moves = move_service.get_pokemon_available_moves(pokemon_id, level)
+        moves = db.get_pokemon_available_moves(pokemon_id, level)
         return jsonify(moves), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
@@ -195,9 +270,10 @@ def get_available_moves(pokemon_id: int):
 @move_bp.route("/moves/<int:move_id>", methods=["GET"])
 def get_move_details(move_id: int):
     """Get detailed information about a move"""
-    move_service = MoveService()
+    from database import PokemonDatabase
+    db = PokemonDatabase()
     try:
-        move = move_service.get_move_details(move_id)
+        move = db.get_move_details(move_id)
         if move:
             return jsonify(move), 200
         return jsonify({"error": "Move not found"}), 404

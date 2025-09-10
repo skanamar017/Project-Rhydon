@@ -4,8 +4,7 @@ Separated from main Flask app for better organization.
 """
 
 from flask import Blueprint, request, jsonify
-from models import Team, TeamPokemon
-from database_service import PokemonDatabase
+from database import Team, TeamPokemon, PokemonDatabase
 
 team_bp = Blueprint('teams', __name__)
 
