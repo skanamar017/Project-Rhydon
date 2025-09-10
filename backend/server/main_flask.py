@@ -62,8 +62,9 @@ def setup_evolution_system():
             print("🚀 Setting up evolution system automatically...")
             conn.close()
             
-            # Run the external setup script
-            result = subprocess.run(["python", "setup_evolution_system.py"], 
+            # Run the external setup script from the legacy directory
+            script_path = os.path.join("..", "database", "legacy", "setup_evolution_system.py")
+            result = subprocess.run(["python", script_path], 
                                   capture_output=True, text=True)
             if result.returncode == 0:
                 print("✅ Evolution system setup completed!")
@@ -80,8 +81,9 @@ def setup_evolution_system():
             print("🚀 Setting up evolution system automatically...")
             conn.close()
             
-            # Run the external setup script
-            result = subprocess.run(["python", "setup_evolution_system.py"], 
+            # Run the external setup script from the legacy directory
+            script_path = os.path.join("..", "database", "legacy", "setup_evolution_system.py")
+            result = subprocess.run(["python", script_path], 
                                   capture_output=True, text=True)
             if result.returncode == 0:
                 print("✅ Evolution system setup completed!")
@@ -99,8 +101,9 @@ def setup_evolution_system():
             print(f"⚠️  PokemonMoves count ({total_moves}) suggests missing evolution moves")
             print("🚀 Updating Pokemon moves with evolution data...")
             
-            # Run the external setup script
-            result = subprocess.run(["python", "setup_evolution_system.py"], 
+            # Run the external setup script from the legacy directory
+            script_path = os.path.join("..", "database", "legacy", "setup_evolution_system.py")
+            result = subprocess.run(["python", script_path], 
                                   capture_output=True, text=True)
             if result.returncode == 0:
                 print("✅ Evolution system setup completed!")

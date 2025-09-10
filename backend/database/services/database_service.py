@@ -6,19 +6,30 @@ Handles all database operations without Flask dependencies.
 import sqlite3
 from typing import Optional, List
 import os
-from models import Team, TeamPokemon, Gen1StatCalculator
+from .models import Team, TeamPokemon, Gen1StatCalculator
 
 class PokemonDatabase:
     def __init__(self, db_path: str = "pokemon.db"):
-        self.db_path = db_path
+        # If db_path is just a filename, place it in the database directory
+        if not os.path.dirname(db_path):
+            service_dir = os.path.dirname(os.path.abspath(__file__))
+            database_dir = os.path.dirname(service_dir)  # Go up one level to database/
+            self.db_path = os.path.join(database_dir, db_path)
+        else:
+            self.db_path = db_path
         self.init_db()
 
     def init_db(self):
         """Initialize the database using create.sql and all insert files"""
         if not os.path.exists(self.db_path):
+            # Get the directory where this service file is located
+            service_dir = os.path.dirname(os.path.abspath(__file__))
+            database_dir = os.path.dirname(service_dir)  # Go up one level to database/
+            
             with sqlite3.connect(self.db_path) as conn:
                 # First create the tables
-                with open("create.sql", "r") as f:
+                create_sql_path = os.path.join(database_dir, "create.sql")
+                with open(create_sql_path, "r") as f:
                     sql_script = f.read()
                 conn.executescript(sql_script)
                 
@@ -34,9 +45,10 @@ class PokemonDatabase:
                 ]
                 
                 for sql_file in sql_files:
-                    if os.path.exists(sql_file):
+                    sql_file_path = os.path.join(database_dir, "data", sql_file)
+                    if os.path.exists(sql_file_path):
                         try:
-                            with open(sql_file, "r") as f:
+                            with open(sql_file_path, "r") as f:
                                 sql_script = f.read()
                             conn.executescript(sql_script)
                             print(f"Successfully loaded {sql_file}")
@@ -320,3 +332,53 @@ class PokemonDatabase:
             result['type2'] = pokemon_row['type2']
             
         return result
+
+    # Move Management Methods
+    def get_pokemon_available_moves(self, pokemon_id: int, max_level: int) -> List[dict]:
+        """Get all moves a Pokemon can learn up to a specific level"""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.execute("""
+                SELECT DISTINCT pm.move_id, m.name, m.type, m.power, m.accuracy, 
+                       m.pp, pm.level_learned, m.effect
+                FROM PokemonMoves pm
+                JOIN Moves m ON pm.move_id = m.id
+                WHERE pm.pokemon_id = ? AND pm.level_learned <= ?
+                ORDER BY pm.level_learned, m.name
+            """, (pokemon_id, max_level))
+            
+            moves = []
+            for row in cursor.fetchall():
+                moves.append({
+                    'move_id': row['move_id'],
+                    'name': row['name'],
+                    'type': row['type'],
+                    'power': row['power'],
+                    'accuracy': row['accuracy'],
+                    'pp': row['pp'],
+                    'level_learned': row['level_learned'],
+                    'effect_description': row['effect']
+                })
+            return moves
+
+    def get_move_details(self, move_id: int) -> Optional[dict]:
+        """Get detailed information about a move"""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.execute("""
+                SELECT id, name, type, power, accuracy, pp, effect
+                FROM Moves WHERE id = ?
+            """, (move_id,))
+            
+            row = cursor.fetchone()
+            if row:
+                return {
+                    'id': row['id'],
+                    'name': row['name'],
+                    'type': row['type'],
+                    'power': row['power'],
+                    'accuracy': row['accuracy'],
+                    'pp': row['pp'],
+                    'effect_description': row['effect']
+                }
+            return None

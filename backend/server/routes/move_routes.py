@@ -4,7 +4,7 @@ Flask route handlers for move management endpoints.
 
 from flask import Blueprint, request, jsonify
 import sqlite3
-from database import Gen1StatCalculator
+from database.database import Gen1StatCalculator
 
 move_bp = Blueprint('moves', __name__)
 
@@ -228,7 +228,7 @@ def get_pokemon_moves_at_level(pokemon_id, level):
 @move_bp.route("/pokemon/<int:pokemon_id>/base_stats", methods=["GET"])
 def get_pokemon_base_stats_route(pokemon_id: int):
     """Get base stats for a Pokémon species"""
-    from database import PokemonDatabase
+    from database.database import PokemonDatabase
     db = PokemonDatabase()
     base_stats = db.get_pokemon_base_stats(pokemon_id)
     if base_stats:
@@ -259,7 +259,7 @@ def get_available_moves(pokemon_id: int):
     if not level:
         return jsonify({"error": "Level parameter is required"}), 400
     
-    from database import PokemonDatabase
+    from database.database import PokemonDatabase
     db = PokemonDatabase()
     try:
         moves = db.get_pokemon_available_moves(pokemon_id, level)
@@ -270,7 +270,7 @@ def get_available_moves(pokemon_id: int):
 @move_bp.route("/moves/<int:move_id>", methods=["GET"])
 def get_move_details(move_id: int):
     """Get detailed information about a move"""
-    from database import PokemonDatabase
+    from database.database import PokemonDatabase
     db = PokemonDatabase()
     try:
         move = db.get_move_details(move_id)
