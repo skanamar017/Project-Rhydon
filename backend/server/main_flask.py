@@ -45,8 +45,12 @@ def setup_evolution_system():
     try:
         print("🔍 Checking evolution system status...")
         
+        # Use the database service to get the correct database path
+        from database.services.database_service import PokemonDatabase
+        db = PokemonDatabase()
+        
         # Check if Evolution table exists and has data
-        conn = sqlite3.connect("pokemon.db")
+        conn = sqlite3.connect(db.db_path)
         cursor = conn.cursor()
         
         # Check if Evolution table exists
