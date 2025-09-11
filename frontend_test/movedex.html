@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Simple Move Dex</title>
+</head>
+<body>
+    <h1>Move Dex</h1>
+    <div>
+        <input type="text" id="search" placeholder="Search by move name...">
+        <button onclick="loadMovedex()">Search</button>
+    </div>
+    <div id="movedex"></div>
+    <script>
+    const BASE_URL = 'http://127.0.0.1:5001';
+    async function loadMovedex() {
+        const search = document.getElementById('search').value;
+        let url = `${BASE_URL}/movedex?limit=20`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const movedexDiv = document.getElementById('movedex');
+        movedexDiv.innerHTML = '';
+        (data.moves || data).forEach(m => {
+            const d = document.createElement('div');
+            d.textContent = `${m.name} (${m.type}) Power: ${m.power || '-'} PP: ${m.pp || '-'}`;
+            d.onclick = async () => {
+                const resp = await fetch(`${BASE_URL}/movedex/${m.id}`);
+                const details = await resp.json();
+                alert(`${details.name}\nType: ${details.type}\nPower: ${details.power || '-'}\nAccuracy: ${details.accuracy || '-'}\nPP: ${details.pp || '-'}\nDescription: ${details.description || ''}`);
+            };
+            movedexDiv.appendChild(d);
+        });
+    }
+    window.onload = loadMovedex;
+    </script>
+</body>
+</html>
