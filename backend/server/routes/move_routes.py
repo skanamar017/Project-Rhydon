@@ -4,15 +4,19 @@ Flask route handlers for move management endpoints.
 
 from flask import Blueprint, request, jsonify
 import sqlite3
-from database.database import Gen1StatCalculator
+from database.database import Gen1StatCalculator, PokemonDatabase
+from flask_cors import cross_origin
 
 move_bp = Blueprint('moves', __name__)
 
 @move_bp.route("/Pokemon/", methods=["GET"])
+@cross_origin()
 def get_all_pokemon():
     """Get all Pokemon with optional type filtering"""
     poke_type = request.args.get("type")
-    with sqlite3.connect("pokemon.db") as conn:
+    db = PokemonDatabase()
+    db_path = db.db_path
+    with sqlite3.connect(db_path) as conn:
         conn.row_factory = sqlite3.Row
         if poke_type:
             cursor = conn.execute("SELECT * FROM Pokemon WHERE type1 = ? OR type2 = ?", (poke_type, poke_type))
@@ -228,7 +232,6 @@ def get_pokemon_moves_at_level(pokemon_id, level):
 @move_bp.route("/pokemon/<int:pokemon_id>/base_stats", methods=["GET"])
 def get_pokemon_base_stats_route(pokemon_id: int):
     """Get base stats for a Pokémon species"""
-    from database.database import PokemonDatabase
     db = PokemonDatabase()
     base_stats = db.get_pokemon_base_stats(pokemon_id)
     if base_stats:
@@ -259,7 +262,6 @@ def get_available_moves(pokemon_id: int):
     if not level:
         return jsonify({"error": "Level parameter is required"}), 400
     
-    from database.database import PokemonDatabase
     db = PokemonDatabase()
     try:
         moves = db.get_pokemon_available_moves(pokemon_id, level)
@@ -270,7 +272,6 @@ def get_available_moves(pokemon_id: int):
 @move_bp.route("/moves/<int:move_id>", methods=["GET"])
 def get_move_details(move_id: int):
     """Get detailed information about a move"""
-    from database.database import PokemonDatabase
     db = PokemonDatabase()
     try:
         move = db.get_move_details(move_id)
