@@ -1,3 +1,6 @@
+# --- TeamPokemon Moves Endpoint (for CORS and move management) ---
+from flask_cors import cross_origin
+
 """
 Flask route handlers for team pokemon management endpoints.
 """
@@ -125,3 +128,37 @@ def get_team_pokemon_stats_route(team_id, tp_id):
     if details:
         return jsonify(details), 200
     return jsonify({"error": "Team Pokémon not found"}), 404
+
+@pokemon_bp.route("/<int:team_id>/TeamPokemon/<int:tp_id>/moves", methods=["GET", "PUT", "OPTIONS"])
+@cross_origin()
+def team_pokemon_moves(team_id, tp_id):
+    db = PokemonDatabase()
+    tp = db.get_team_pokemon(tp_id)
+    if not tp:
+        return jsonify({"error": "TeamPokemon not found"}), 404
+
+    if request.method == "OPTIONS":
+        # CORS preflight
+        return ('', 204)
+
+    if request.method == "GET":
+        # Return current moves for this TeamPokemon
+        moves = []
+        for move_id in [tp.move1_id, tp.move2_id, tp.move3_id, tp.move4_id]:
+            if move_id:
+                move = db.get_move_by_id(move_id)
+                if move:
+                    moves.append(move.model_dump())
+        return jsonify({"current_moves": moves}), 200
+
+    if request.method == "PUT":
+        data = request.get_json()
+        move_ids = data.get('move_ids', [])
+        # Pad or trim to 4
+        move_ids = (move_ids + [None]*4)[:4]
+        tp.move1_id, tp.move2_id, tp.move3_id, tp.move4_id = move_ids
+        updated = db.update_team_pokemon(tp_id, tp)
+        if updated:
+            return jsonify({"message": "Moves updated", "current_moves": move_ids}), 200
+        else:
+            return jsonify({"error": "Failed to update moves"}), 500
