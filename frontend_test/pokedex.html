@@ -11,6 +11,7 @@
         <button onclick="loadPokedex()">Search</button>
     </div>
     <div id="pokedex"></div>
+    <div id="pokemon-details" style="margin-top:20px;"></div>
     <script>
     const BASE_URL = 'http://127.0.0.1:5001';
     async function loadPokedex() {
@@ -24,10 +25,26 @@
         (data.pokemon || data).forEach(p => {
             const d = document.createElement('div');
             d.textContent = `#${p.pokedex_number || p.id} ${p.name} (${p.type1}${p.type2 ? '/' + p.type2 : ''})`;
+            d.style.cursor = 'pointer';
             d.onclick = async () => {
                 const resp = await fetch(`${BASE_URL}/pokedex/${p.id || p.pokedex_number}`);
                 const details = await resp.json();
-                alert(`${details.name}\nType: ${details.type1}${details.type2 ? '/' + details.type2 : ''}\nBase Stats: HP ${details.base_hp}, Atk ${details.base_attack}, Def ${details.base_defense}, Spd ${details.base_speed}, Spc ${details.base_special}`);
+                const detailsDiv = document.getElementById('pokemon-details');
+                let movesHtml = '';
+                if (details.moves && details.moves.length > 0) {
+                    movesHtml = `<h4>Moves</h4><ul>` +
+                        details.moves.map(m => `<li>Lv. ${m.level_learned}: <b>${m.name}</b> (${m.type})${m.power ? ', Power: ' + m.power : ''}${m.accuracy ? ', Acc: ' + m.accuracy : ''}</li>`).join('') +
+                        `</ul>`;
+                } else {
+                    movesHtml = '<p>No moves found.</p>';
+                }
+                detailsDiv.innerHTML = `
+                    <h3>${details.name} (#${details.pokedex_number})</h3>
+                    <p><b>Type:</b> ${details.type1}${details.type2 ? '/' + details.type2 : ''}</p>
+                    <p><b>Base Stats:</b> HP ${details.base_hp}, Atk ${details.base_attack}, Def ${details.base_defense}, Spd ${details.base_speed}, Spc ${details.base_special}</p>
+                    <p><b>Entry:</b> ${details.entry || 'No entry available.'}</p>
+                    ${movesHtml}
+                `;
             };
             pokedexDiv.appendChild(d);
         });

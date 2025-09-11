@@ -11,9 +11,7 @@ def get_pokedex():
     db = PokemonDatabase()
     poke_type = request.args.get("type")
     search = request.args.get("search")
-    limit = int(request.args.get("limit", 20))
-    offset = int(request.args.get("offset", 0))
-    pokedex = db.get_pokedex(poke_type=poke_type, search=search, limit=limit, offset=offset)
+    pokedex = db.get_pokedex(name_filter=search, type_filter=poke_type)
     return jsonify(pokedex), 200
 
 @pokedex_bp.route("/pokedex/<int:pokemon_id>", methods=["GET"])
