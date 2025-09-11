@@ -11,9 +11,10 @@ def get_movedex():
     db = PokemonDatabase()
     move_type = request.args.get("type")
     search = request.args.get("search")
-    limit = int(request.args.get("limit", 20))
-    offset = int(request.args.get("offset", 0))
-    movedex = db.get_movedex(move_type=move_type, search=search, limit=limit, offset=offset)
+    limit = request.args.get("limit")
+    if limit is not None:
+        limit = int(limit)
+    movedex = db.get_movedex(move_type=move_type, search=search, limit=limit) if limit else db.get_movedex(move_type=move_type, search=search, limit=10000)
     return jsonify(movedex), 200
 
 @movedex_bp.route("/movedex/<int:move_id>", methods=["GET"])

@@ -11,12 +11,13 @@
         <button onclick="loadMovedex()">Search</button>
     </div>
     <div id="movedex"></div>
+    <div id="move-details" style="margin-top:20px;"></div>
     <script>
     const BASE_URL = 'http://127.0.0.1:5001';
     async function loadMovedex() {
         const search = document.getElementById('search').value;
-        let url = `${BASE_URL}/movedex?limit=20`;
-        if (search) url += `&search=${encodeURIComponent(search)}`;
+    let url = `${BASE_URL}/movedex`;
+    if (search) url += `?search=${encodeURIComponent(search)}`;
         const res = await fetch(url);
         const data = await res.json();
         const movedexDiv = document.getElementById('movedex');
@@ -24,10 +25,28 @@
         (data.moves || data).forEach(m => {
             const d = document.createElement('div');
             d.textContent = `${m.name} (${m.type}) Power: ${m.power || '-'} PP: ${m.pp || '-'}`;
+            d.style.cursor = 'pointer';
             d.onclick = async () => {
                 const resp = await fetch(`${BASE_URL}/movedex/${m.id}`);
                 const details = await resp.json();
-                alert(`${details.name}\nType: ${details.type}\nPower: ${details.power || '-'}\nAccuracy: ${details.accuracy || '-'}\nPP: ${details.pp || '-'}\nDescription: ${details.description || ''}`);
+                const detailsDiv = document.getElementById('move-details');
+                let pokemonHtml = '';
+                if (details.pokemon && details.pokemon.length > 0) {
+                    pokemonHtml = `<h4>Pokémon that can learn this move:</h4><ul>` +
+                        details.pokemon.map(p => `<li>#${p.pokedex_number} ${p.name} (Lv. ${p.level_learned})</li>`).join('') +
+                        `</ul>`;
+                } else {
+                    pokemonHtml = '<p>No Pokémon can learn this move.</p>';
+                }
+                detailsDiv.innerHTML = `
+                    <h3>${details.name}</h3>
+                    <p><b>Type:</b> ${details.type}</p>
+                    <p><b>Power:</b> ${details.power || '-'}</p>
+                    <p><b>Accuracy:</b> ${details.accuracy || '-'}</p>
+                    <p><b>PP:</b> ${details.pp || '-'}</p>
+                    <p><b>Description:</b> ${details.effect_description || details.description || 'No description available.'}</p>
+                    ${pokemonHtml}
+                `;
             };
             movedexDiv.appendChild(d);
         });
