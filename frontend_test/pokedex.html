@@ -21,7 +21,7 @@
         const res = await fetch(url);
         const data = await res.json();
         const pokedexDiv = document.getElementById('pokedex');
-        pokedexDiv.innerHTML = '';
+        pokedexDiv.innerHTML = '<pre style="background:#eee;padding:5px;">API Response:\n' + JSON.stringify(data, null, 2) + '</pre>';
         (data.pokemon || data).forEach(p => {
             const d = document.createElement('div');
             d.textContent = `#${p.pokedex_number || p.id} ${p.name} (${p.type1}${p.type2 ? '/' + p.type2 : ''})`;
@@ -30,13 +30,13 @@
                 const resp = await fetch(`${BASE_URL}/pokedex/${p.id || p.pokedex_number}`);
                 const details = await resp.json();
                 const detailsDiv = document.getElementById('pokemon-details');
-                let movesHtml = '';
+                let movesHtml = '<pre style="background:#eee;padding:5px;">API Response:\n' + JSON.stringify(details, null, 2) + '</pre>';
                 if (details.moves && details.moves.length > 0) {
-                    movesHtml = `<h4>Moves</h4><ul>` +
+                    movesHtml += `<h4>Moves</h4><ul>` +
                         details.moves.map(m => `<li>Lv. ${m.level_learned}: <b>${m.name}</b> (${m.type})${m.power ? ', Power: ' + m.power : ''}${m.accuracy ? ', Acc: ' + m.accuracy : ''}</li>`).join('') +
                         `</ul>`;
                 } else {
-                    movesHtml = '<p>No moves found.</p>';
+                    movesHtml += '<p>No moves found.</p>';
                 }
                 detailsDiv.innerHTML = `
                     <h3>${details.name} (#${details.pokedex_number})</h3>

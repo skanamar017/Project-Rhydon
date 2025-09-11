@@ -21,7 +21,7 @@
         const res = await fetch(url);
         const data = await res.json();
         const movedexDiv = document.getElementById('movedex');
-        movedexDiv.innerHTML = '';
+        movedexDiv.innerHTML = '<pre style="background:#eee;padding:5px;">API Response:\n' + JSON.stringify(data, null, 2) + '</pre>';
         (data.moves || data).forEach(m => {
             const d = document.createElement('div');
             d.textContent = `${m.name} (${m.type}) Power: ${m.power || '-'} PP: ${m.pp || '-'}`;
@@ -30,13 +30,13 @@
                 const resp = await fetch(`${BASE_URL}/movedex/${m.id}`);
                 const details = await resp.json();
                 const detailsDiv = document.getElementById('move-details');
-                let pokemonHtml = '';
+                let pokemonHtml = '<pre style="background:#eee;padding:5px;">API Response:\n' + JSON.stringify(details, null, 2) + '</pre>';
                 if (details.pokemon && details.pokemon.length > 0) {
-                    pokemonHtml = `<h4>Pokémon that can learn this move:</h4><ul>` +
+                    pokemonHtml += `<h4>Pokémon that can learn this move:</h4><ul>` +
                         details.pokemon.map(p => `<li>#${p.pokedex_number} ${p.name} (Lv. ${p.level_learned})</li>`).join('') +
                         `</ul>`;
                 } else {
-                    pokemonHtml = '<p>No Pokémon can learn this move.</p>';
+                    pokemonHtml += '<p>No Pokémon can learn this move.</p>';
                 }
                 detailsDiv.innerHTML = `
                     <h3>${details.name}</h3>
