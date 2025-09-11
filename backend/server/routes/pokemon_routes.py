@@ -17,6 +17,7 @@ def _team_belongs_to_current_user(team_id):
     return team and team.account_id == current_user.id
 
 @pokemon_bp.route("/<int:team_id>/TeamPokemon/", methods=["POST"])
+@cross_origin()
 @login_required
 def create_team_pokemon(team_id):
     if not _team_belongs_to_current_user(team_id):
@@ -43,6 +44,7 @@ def create_team_pokemon(team_id):
         return jsonify({"error": str(e)}), 500
 
 @pokemon_bp.route("/<int:team_id>/TeamPokemon/<int:tp_id>", methods=["GET"])
+@cross_origin()
 @login_required
 def get_team_pokemon(team_id, tp_id):
     db = PokemonDatabase()
@@ -53,6 +55,7 @@ def get_team_pokemon(team_id, tp_id):
 
 @pokemon_bp.route("/<int:team_id>/TeamPokemon/", methods=["GET"])
 @pokemon_bp.route("/<int:team_id>/TeamPokemon", methods=["GET"])
+@cross_origin()
 @login_required
 def get_team_pokemons(team_id):
     if not _team_belongs_to_current_user(team_id):
@@ -62,6 +65,7 @@ def get_team_pokemons(team_id):
     return jsonify(tps), 200
 
 @pokemon_bp.route("/<int:team_id>/TeamPokemon/count", methods=["GET"])
+@cross_origin()
 @login_required
 def get_team_pokemon_count(team_id):
     if not _team_belongs_to_current_user(team_id):
@@ -79,6 +83,7 @@ def get_team_pokemon_count(team_id):
         return jsonify({"error": str(e)}), 500
 
 @pokemon_bp.route("/<int:team_id>/TeamPokemon/<int:tp_id>", methods=["PUT"])
+@cross_origin()
 @login_required
 def update_team_pokemon(team_id, tp_id):
     if not _team_belongs_to_current_user(team_id):
@@ -127,6 +132,7 @@ def update_team_pokemon(team_id, tp_id):
         return jsonify({"error": str(e)}), 500
 
 @pokemon_bp.route("/<int:team_id>/TeamPokemon/<int:tp_id>", methods=["DELETE"])
+@cross_origin()
 @login_required
 def delete_team_pokemon(team_id, tp_id):
     if not _team_belongs_to_current_user(team_id):
@@ -142,6 +148,7 @@ def delete_team_pokemon(team_id, tp_id):
         return jsonify({"error": str(e)}), 500
 
 @pokemon_bp.route("/<int:team_id>/TeamPokemon/<int:tp_id>/stats", methods=["GET"])
+@cross_origin()
 def get_team_pokemon_stats_route(team_id, tp_id):
     """Get calculated stats for a team's Pokémon"""
     db = PokemonDatabase()

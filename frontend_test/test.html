@@ -8,6 +8,17 @@
 <body>
     <h1>Pokemon Team Manager - Basic Test Frontend</h1>
     
+    <h2>Register</h2>
+    <form id="registerForm">
+        <label for="registerUsername">Username:</label>
+        <input type="text" id="registerUsername" required>
+        <label for="registerPassword">Password:</label>
+        <input type="password" id="registerPassword" required>
+        <button type="submit">Register</button>
+    </form>
+    <div id="registerResult"></div>
+    <hr>
+    
     <h2>Login</h2>
     <form id="loginForm">
         <label for="loginUsername">Username:</label>
@@ -86,6 +97,30 @@
             document.getElementById('testConnection').addEventListener('click', testConnection);
             document.getElementById('loginForm').addEventListener('submit', handleLogin);
             document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+            document.getElementById('registerForm').addEventListener('submit', async function(event) {
+                event.preventDefault();
+                const username = document.getElementById('registerUsername').value;
+                const password = document.getElementById('registerPassword').value;
+                const resultDiv = document.getElementById('registerResult');
+                try {
+                    const res = await fetch(`${API_BASE}/user/register`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ username, password })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        resultDiv.innerHTML = 'Registration successful! You are now logged in.';
+                        document.getElementById('logoutBtn').style.display = '';
+                        showCurrentUser();
+                    } else {
+                        resultDiv.innerHTML = 'Registration failed: ' + (data.error || res.status);
+                    }
+                } catch (e) {
+                    resultDiv.innerHTML = 'Registration error: ' + e.message;
+                }
+            });
         }
 
         async function makeRequest(url, options = {}) {

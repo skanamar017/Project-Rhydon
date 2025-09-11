@@ -10,7 +10,7 @@ from flask_cors import cross_origin
 move_bp = Blueprint('moves', __name__)
 
 @move_bp.route("/Pokemon/", methods=["GET"])
-@cross_origin()
+@cross_origin(supports_credentials=True, origins=["http://127.0.0.1:5001", "null"])
 def get_all_pokemon():
     """Get all Pokemon with optional type filtering"""
     poke_type = request.args.get("type")

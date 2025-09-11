@@ -5,7 +5,7 @@ Registers blueprints and handles application setup.
 
 from flask import Flask, jsonify
 from flask_cors import CORS
-from flask_login import LoginManager
+from flask_login import LoginManager, login_required, current_user
 import sqlite3
 import subprocess
 import sys
@@ -28,12 +28,21 @@ def create_app():
     app.secret_key = 'super-secret-key'  # Change this in production!
 
     # Configure CORS
-    CORS(app)
+    CORS(app, supports_credentials=True, origins=["http://127.0.0.1:5001", "null"])
+    CORS(team_bp, supports_credentials=True, origins=["http://127.0.0.1:5001", "null"])
+    CORS(pokemon_bp, supports_credentials=True, origins=["http://127.0.0.1:5001", "null"])
+    CORS(move_bp, supports_credentials=True, origins=["http://127.0.0.1:5001", "null"])
+    from routes.user_routes import user_bp
+    CORS(user_bp, supports_credentials=True, origins=["http://127.0.0.1:5001", "null"])
 
     # Set up flask-login
     login_manager = LoginManager()
     login_manager.init_app(app)
-    login_manager.login_view = 'login'  # or your login endpoint
+    login_manager.login_view = None  # Disable redirect for API
+
+    @login_manager.unauthorized_handler
+    def unauthorized():
+        return jsonify({'error': 'Unauthorized'}), 401
 
     @login_manager.user_loader
     def load_user(user_id):
@@ -51,7 +60,8 @@ def create_app():
     app.register_blueprint(team_bp, url_prefix='/Teams')
     app.register_blueprint(pokemon_bp, url_prefix='/Teams')
     app.register_blueprint(move_bp)
-    
+    app.register_blueprint(user_bp, url_prefix='/user')
+
     # Home route
     @app.route("/", methods=["GET"])
     def home():

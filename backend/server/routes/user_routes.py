@@ -5,7 +5,10 @@ from database.services.database_service import PokemonDatabase
 
 user_bp = Blueprint('user', __name__)
 
+from flask_cors import cross_origin
+
 @user_bp.route('/register', methods=['POST'])
+@cross_origin(supports_credentials=True, origins=["http://127.0.0.1:5001", "null"])
 def register():
     data = request.get_json()
     username = data.get('username')
@@ -19,6 +22,7 @@ def register():
     return jsonify({'message': 'Registered and logged in', 'username': user.username})
 
 @user_bp.route('/login', methods=['POST'])
+@cross_origin(supports_credentials=True, origins=["http://127.0.0.1:5001", "null"])
 def login():
     data = request.get_json()
     username = data.get('username')
@@ -32,12 +36,14 @@ def login():
     return jsonify({'message': 'Logged in', 'username': user.username})
 
 @user_bp.route('/logout', methods=['POST'])
+@cross_origin(supports_credentials=True, origins=["http://127.0.0.1:5001", "null"])
 @login_required
 def logout():
     logout_user()
     return jsonify({'message': 'Logged out'})
 
 @user_bp.route('/me', methods=['GET'])
+@cross_origin(supports_credentials=True, origins=["http://127.0.0.1:5001", "null"])
 @login_required
 def me():
     return jsonify({'id': current_user.id, 'username': current_user.username})

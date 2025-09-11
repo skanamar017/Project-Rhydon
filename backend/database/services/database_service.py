@@ -9,6 +9,26 @@ import os
 from .models import Team, TeamPokemon, Gen1StatCalculator, Account
 
 class PokemonDatabase:
+    def verify_account(self, username: str, password_hash: str):
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute(
+                "SELECT id, username, password_hash FROM Account WHERE username = ?",
+                (username,)
+            )
+            row = cursor.fetchone()
+            if row and row[2] == password_hash:
+                from database.services.models import Account
+                return Account(id=row[0], username=row[1], password_hash=row[2])
+            return None
+    def create_account(self, username: str, password_hash: str):
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute(
+                "INSERT INTO Account (username, password_hash) VALUES (?, ?)",
+                (username, password_hash)
+            )
+            account_id = cursor.lastrowid
+            from database.services.models import Account
+            return Account(id=account_id, username=username, password_hash=password_hash)
     def __init__(self, db_path: str = "pokemon.db"):
         # If db_path is just a filename, place it in the database directory
         if not os.path.dirname(db_path):
@@ -384,4 +404,16 @@ class PokemonDatabase:
                     'pp': row['pp'],
                     'effect_description': row['effect']
                 }
+            return None
+
+    def get_account_by_username(self, username: str):
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute(
+                "SELECT id, username, password_hash FROM Account WHERE username = ?",
+                (username,)
+            )
+            row = cursor.fetchone()
+            if row:
+                from database.services.models import Account
+                return Account(id=row[0], username=row[1], password_hash=row[2])
             return None
