@@ -5,6 +5,7 @@ Registers blueprints and handles application setup.
 
 from flask import Flask, jsonify
 from flask_cors import CORS
+from flask_login import LoginManager
 import sqlite3
 import subprocess
 import sys
@@ -17,14 +18,35 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from routes.team_routes import team_bp
 from routes.pokemon_routes import pokemon_bp
 from routes.move_routes import move_bp
+from routes.user_routes import user_bp
+from server.user_model import User
+from database.services.database_service import PokemonDatabase
 
 def create_app():
     """Create and configure the Flask application"""
     app = Flask(__name__)
-    
+    app.secret_key = 'super-secret-key'  # Change this in production!
+
     # Configure CORS
     CORS(app)
-    
+
+    # Set up flask-login
+    login_manager = LoginManager()
+    login_manager.init_app(app)
+    login_manager.login_view = 'login'  # or your login endpoint
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        db = PokemonDatabase()
+        # Find account by id
+        conn = sqlite3.connect(db.db_path)
+        cursor = conn.execute("SELECT id, username, password_hash FROM Account WHERE id = ?", (user_id,))
+        row = cursor.fetchone()
+        conn.close()
+        if row:
+            return User(id=row[0], username=row[1], password_hash=row[2])
+        return None
+
     # Register blueprints with URL prefixes
     app.register_blueprint(team_bp, url_prefix='/Teams')
     app.register_blueprint(pokemon_bp, url_prefix='/Teams')

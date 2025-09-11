@@ -6,7 +6,7 @@ Handles all database operations without Flask dependencies.
 import sqlite3
 from typing import Optional, List
 import os
-from .models import Team, TeamPokemon, Gen1StatCalculator
+from .models import Team, TeamPokemon, Gen1StatCalculator, Account
 
 class PokemonDatabase:
     def __init__(self, db_path: str = "pokemon.db"):
@@ -63,8 +63,8 @@ class PokemonDatabase:
     def create_team(self, team: Team) -> Team:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
-                "INSERT INTO Team (name) VALUES (?)",
-                (team.name,)
+                "INSERT INTO Team (name, account_id) VALUES (?, ?)",
+                (team.name, team.account_id)
             )
             team.id = cursor.lastrowid
             conn.commit()
@@ -79,10 +79,13 @@ class PokemonDatabase:
                 return Team(**dict(row))
         return None
 
-    def get_all_teams(self) -> List[Team]:
+    def get_all_teams(self, account_id: Optional[int] = None) -> List[Team]:
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
-            cursor = conn.execute("SELECT * FROM Team")
+            if account_id is not None:
+                cursor = conn.execute("SELECT * FROM Team WHERE account_id = ?", (account_id,))
+            else:
+                cursor = conn.execute("SELECT * FROM Team")
             rows = cursor.fetchall()
             return [Team(**dict(row)) for row in rows]
 

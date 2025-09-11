@@ -89,10 +89,24 @@ CREATE TABLE PokemonMoves (
 (id)
 );
 
+
+CREATE TABLE Account (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username VARCHAR
+(50) NOT NULL UNIQUE,
+    password_hash VARCHAR
+(255) NOT NULL
+);
+
 CREATE TABLE Team (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR
-(100) NOT NULL
+(100) NOT NULL,
+    account_id INTEGER NOT NULL,
+    FOREIGN KEY
+(account_id) REFERENCES Account
+(id) ON
+DELETE CASCADE
 );
 
 

@@ -8,9 +8,15 @@ from pydantic import BaseModel
 import random
 import math
 
+class Account(BaseModel):
+    id: Optional[int] = None
+    username: str
+    password_hash: str
+
 class Team(BaseModel):
     id: Optional[int] = None
     name: str
+    account_id: int
 
 class TeamPokemon(BaseModel):
     id: Optional[int] = None

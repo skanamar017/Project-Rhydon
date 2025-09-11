@@ -1,5 +1,6 @@
 # --- TeamPokemon Moves Endpoint (for CORS and move management) ---
 from flask_cors import cross_origin
+from flask_login import login_required, current_user
 
 """
 Flask route handlers for team pokemon management endpoints.
@@ -10,8 +11,16 @@ from database.database import TeamPokemon, PokemonDatabase
 
 pokemon_bp = Blueprint('pokemon', __name__)
 
+def _team_belongs_to_current_user(team_id):
+    db = PokemonDatabase()
+    team = db.get_team(team_id)
+    return team and team.account_id == current_user.id
+
 @pokemon_bp.route("/<int:team_id>/TeamPokemon/", methods=["POST"])
+@login_required
 def create_team_pokemon(team_id):
+    if not _team_belongs_to_current_user(team_id):
+        return jsonify({"error": "Forbidden: Not your team"}), 403
     db = PokemonDatabase()
     try:
         data = request.get_json()
@@ -34,23 +43,29 @@ def create_team_pokemon(team_id):
         return jsonify({"error": str(e)}), 500
 
 @pokemon_bp.route("/<int:team_id>/TeamPokemon/<int:tp_id>", methods=["GET"])
+@login_required
 def get_team_pokemon(team_id, tp_id):
     db = PokemonDatabase()
     tp = db.get_team_pokemon(tp_id)
-    if tp:
+    if tp and _team_belongs_to_current_user(team_id):
         return jsonify(tp.model_dump()), 200
-    return jsonify({"error": "TeamPokemon not found"}), 404
+    return jsonify({"error": "TeamPokemon not found or not owned by user"}), 404
 
 @pokemon_bp.route("/<int:team_id>/TeamPokemon/", methods=["GET"])
 @pokemon_bp.route("/<int:team_id>/TeamPokemon", methods=["GET"])
+@login_required
 def get_team_pokemons(team_id):
+    if not _team_belongs_to_current_user(team_id):
+        return jsonify({"error": "Forbidden: Not your team"}), 403
     db = PokemonDatabase()
     tps = db.get_team_pokemons_by_team_id(team_id)
     return jsonify(tps), 200
 
 @pokemon_bp.route("/<int:team_id>/TeamPokemon/count", methods=["GET"])
+@login_required
 def get_team_pokemon_count(team_id):
-    """Get the current number of Pokemon in a team"""
+    if not _team_belongs_to_current_user(team_id):
+        return jsonify({"error": "Forbidden: Not your team"}), 403
     db = PokemonDatabase()
     try:
         count = db.get_team_pokemon_count(team_id)
@@ -64,7 +79,10 @@ def get_team_pokemon_count(team_id):
         return jsonify({"error": str(e)}), 500
 
 @pokemon_bp.route("/<int:team_id>/TeamPokemon/<int:tp_id>", methods=["PUT"])
+@login_required
 def update_team_pokemon(team_id, tp_id):
+    if not _team_belongs_to_current_user(team_id):
+        return jsonify({"error": "Forbidden: Not your team"}), 403
     db = PokemonDatabase()
     try:
         data = request.get_json()
@@ -109,7 +127,10 @@ def update_team_pokemon(team_id, tp_id):
         return jsonify({"error": str(e)}), 500
 
 @pokemon_bp.route("/<int:team_id>/TeamPokemon/<int:tp_id>", methods=["DELETE"])
+@login_required
 def delete_team_pokemon(team_id, tp_id):
+    if not _team_belongs_to_current_user(team_id):
+        return jsonify({"error": "Forbidden: Not your team"}), 403
     db = PokemonDatabase()
     try:
         if db.delete_team_pokemon(tp_id):

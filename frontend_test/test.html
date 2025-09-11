@@ -8,6 +8,19 @@
 <body>
     <h1>Pokemon Team Manager - Basic Test Frontend</h1>
     
+    <h2>Login</h2>
+    <form id="loginForm">
+        <label for="loginUsername">Username:</label>
+        <input type="text" id="loginUsername" required>
+        <label for="loginPassword">Password:</label>
+        <input type="password" id="loginPassword" required>
+        <button type="submit">Login</button>
+    </form>
+    <div id="loginResult"></div>
+    <button id="logoutBtn" style="display:none;">Logout</button>
+    <div id="currentUser"></div>
+    <hr>
+    
     <h2>Create New Team</h2>
     <form id="createTeamForm">
         <label for="teamName">Team Name:</label>
@@ -63,6 +76,7 @@
             loadTeams();
             loadPokemonList();
             setupEventListeners();
+            showCurrentUser();
         });
 
         function setupEventListeners() {
@@ -70,11 +84,13 @@
             document.getElementById('addPokemonForm').addEventListener('submit', handleAddPokemon);
             document.getElementById('refreshTeams').addEventListener('click', loadTeams);
             document.getElementById('testConnection').addEventListener('click', testConnection);
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            document.getElementById('logoutBtn').addEventListener('click', handleLogout);
         }
 
         async function makeRequest(url, options = {}) {
             try {
-                const response = await fetch(url, options);
+                const response = await fetch(url, { ...options, credentials: 'include' });
                 const data = await response.json();
                 
                 if (!response.ok) {
@@ -85,6 +101,60 @@
             } catch (error) {
                 throw error;
             }
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            const resultDiv = document.getElementById('loginResult');
+            
+            if (!username || !password) {
+                resultDiv.innerHTML = 'Error: Please enter both username and password';
+                return;
+            }
+
+            try {
+                const response = await makeRequest(`${API_BASE}/user/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                resultDiv.innerHTML = 'Login successful!';
+                document.getElementById('logoutBtn').style.display = '';
+                showCurrentUser();
+                loadTeams();
+            } catch (error) {
+                resultDiv.innerHTML = `Error: ${error.message}`;
+            }
+        }
+
+        async function handleLogout() {
+            const resultDiv = document.getElementById('loginResult');
+            
+            try {
+                await fetch(`${API_BASE}/user/logout`, { method: 'POST', credentials: 'include' });
+
+                resultDiv.innerHTML = 'Success: Logged out';
+                document.getElementById('logoutBtn').style.display = 'none';
+                document.getElementById('currentUser').innerHTML = '';
+                loadTeams();
+            } catch (error) {
+                resultDiv.innerHTML = `Error: ${error.message}`;
+            }
+        }
+
+        async function showCurrentUser() {
+            try {
+                const res = await fetch(`${API_BASE}/user/me`, { credentials: 'include' });
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('currentUser').innerHTML = 'Logged in as: ' + data.username;
+                }
+            } catch {}
         }
 
         async function handleCreateTeam(event) {
