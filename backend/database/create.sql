@@ -1,12 +1,24 @@
 --change trainrs to have more detail
 --add gym members
 
+-- Users table for authentication
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username VARCHAR
+(50) NOT NULL UNIQUE,
+    password_hash VARCHAR
+(255) NOT NULL,
+    email VARCHAR
+(100) UNIQUE
+);
+
 
 
 CREATE TABLE PokemonType
 (
     type_name VARCHAR(20) PRIMARY KEY
 );
+
 
 INSERT INTO PokemonType
     (type_name)
@@ -27,24 +39,25 @@ VALUES
     ('Ghost'),
     ('Dragon');
 
+
 CREATE TABLE Pokemon (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    pokedex_number INT NOT NULL UNIQUE,
+    pokedex_number INTEGER NOT NULL UNIQUE,
     name VARCHAR
 (50) NOT NULL,
     type1 VARCHAR
 (20) NOT NULL,
     type2 VARCHAR
 (20),
-    base_hp INT NOT NULL CHECK
+    base_hp INTEGER NOT NULL CHECK
 (base_hp >= 0),
-    base_attack INT NOT NULL CHECK
+    base_attack INTEGER NOT NULL CHECK
 (base_attack >= 0),
-    base_defense INT NOT NULL CHECK
+    base_defense INTEGER NOT NULL CHECK
 (base_defense >= 0),
-    base_special INT NOT NULL CHECK
+    base_special INTEGER NOT NULL CHECK
 (base_special >= 0),
-    base_speed INT NOT NULL CHECK
+    base_speed INTEGER NOT NULL CHECK
 (base_speed >= 0),
     entry VARCHAR
 (255),
@@ -56,16 +69,17 @@ CREATE TABLE Pokemon (
 (type_name)
 );
 
+
 CREATE TABLE Moves (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR
 (50) NOT NULL,
     type VARCHAR
 (20) NOT NULL,
-    power INT,
-    accuracy INT CHECK
+    power INTEGER,
+    accuracy INTEGER CHECK
 (accuracy >= 0 AND accuracy <= 100),
-    pp INT CHECK
+    pp INTEGER CHECK
 (pp > 0),
     effect VARCHAR
 (255),
@@ -74,12 +88,13 @@ CREATE TABLE Moves (
 (type_name)
 );
 
+
 CREATE TABLE PokemonMoves (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    pokemon_id INT NOT NULL,
-    move_id INT NOT NULL,
-    level_learned INT,
-    pp INT CHECK
+    pokemon_id INTEGER NOT NULL,
+    move_id INTEGER NOT NULL,
+    level_learned INTEGER,
+    pp INTEGER CHECK
 (pp > 0),
     FOREIGN KEY
 (pokemon_id) REFERENCES Pokemon
@@ -88,6 +103,7 @@ CREATE TABLE PokemonMoves (
 (move_id) REFERENCES Moves
 (id)
 );
+
 
 CREATE TABLE Team (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -101,46 +117,40 @@ CREATE TABLE Team (
 
 
 
+
 CREATE TABLE TeamPokemon (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    team_id INT NOT NULL,
-    pokemon_id INT NOT NULL,
+    team_id INTEGER NOT NULL,
+    pokemon_id INTEGER NOT NULL,
     nickname VARCHAR
 (50),
-    level INT CHECK
+    level INTEGER CHECK
 (level BETWEEN 1 AND 100),
-    -- Individual Values (IVs) - Generation 1 uses 0-15 range
-    -- IVs will be randomly generated when Pokemon is created
-    iv_attack INT CHECK
+    iv_attack INTEGER CHECK
 (iv_attack BETWEEN 0 AND 15),
-    iv_defense INT CHECK
+    iv_defense INTEGER CHECK
 (iv_defense BETWEEN 0 AND 15),
-    iv_speed INT CHECK
+    iv_speed INTEGER CHECK
 (iv_speed BETWEEN 0 AND 15),
-    iv_special INT CHECK
+    iv_special INTEGER CHECK
 (iv_special BETWEEN 0 AND 15),
-    -- Note: HP IV is calculated from other IVs in Gen 1
-    -- Effort Values (EVs) - Generation 1 uses 0-65535 range
-    -- EVs start at 0 and are gained through training
-    ev_hp INT DEFAULT 0 CHECK
+    ev_hp INTEGER DEFAULT 0 CHECK
 (ev_hp BETWEEN 0 AND 65535),
-    ev_attack INT DEFAULT 0 CHECK
+    ev_attack INTEGER DEFAULT 0 CHECK
 (ev_attack BETWEEN 0 AND 65535),
-    ev_defense INT DEFAULT 0 CHECK
+    ev_defense INTEGER DEFAULT 0 CHECK
 (ev_defense BETWEEN 0 AND 65535),
-    ev_speed INT DEFAULT 0 CHECK
+    ev_speed INTEGER DEFAULT 0 CHECK
 (ev_speed BETWEEN 0 AND 65535),
-    ev_special INT DEFAULT 0 CHECK
+    ev_special INTEGER DEFAULT 0 CHECK
 (ev_special BETWEEN 0 AND 65535),
-    -- Battle fields
-    current_hp INT,
+    current_hp INTEGER,
     status VARCHAR
 (20),
-    -- Move slots (Generation 1 allows 4 moves max)
-    move1_id INT,
-    move2_id INT,
-    move3_id INT,
-    move4_id INT,
+    move1_id INTEGER,
+    move2_id INTEGER,
+    move3_id INTEGER,
+    move4_id INTEGER,
     FOREIGN KEY
 (team_id) REFERENCES Team
 (id) ON
@@ -149,29 +159,24 @@ DELETE CASCADE,
 REFERENCES Pokemon
 (pokedex_number),
     FOREIGN KEY
-(move1_id)
-REFERENCES Moves
+(move1_id) REFERENCES Moves
 (id),
     FOREIGN KEY
-(move2_id)
-REFERENCES Moves
+(move2_id) REFERENCES Moves
 (id),
     FOREIGN KEY
-(move3_id)
-REFERENCES Moves
+(move3_id) REFERENCES Moves
 (id),
     FOREIGN KEY
-(move4_id)
-REFERENCES Moves
+(move4_id) REFERENCES Moves
 (id)
 );
 
 
 
+
 -- Create Evolution table to track Pokemon evolution chains
-CREATE TABLE
-IF NOT EXISTS Evolution
-(
+CREATE TABLE Evolution (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     from_pokemon_id INTEGER NOT NULL,
     to_pokemon_id INTEGER NOT NULL,
@@ -190,6 +195,7 @@ IF NOT EXISTS Evolution
 );
 
 -- Index for faster lookups
+
 CREATE INDEX
 IF NOT EXISTS idx_evolution_from ON Evolution
 (from_pokemon_id);

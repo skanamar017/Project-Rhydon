@@ -24,7 +24,6 @@ def create_new_structure():
             'data/gen1_pokemon_inserts.sql',
             'data/gen1_moves_inserts.sql', 
             'data/gen1_pokemon_moves_inserts_corrected.sql',
-            'data/insert.sql',
             
             # Legacy scripts (can be deleted after restructuring)
             'legacy/fetch_gen1_pokemon.py',
@@ -85,8 +84,7 @@ def print_recommended_structure():
     print("│   ├── data/                      # SQL data files")
     print("│   │   ├── gen1_pokemon_inserts.sql")
     print("│   │   ├── gen1_moves_inserts.sql")
-    print("│   │   ├── gen1_pokemon_moves_inserts_corrected.sql")
-    print("│   │   └── insert.sql")
+    print("│   │   └── gen1_pokemon_moves_inserts_corrected.sql")
     print("│   ├── services/                  # Database service layer")
     print("│   │   ├── database_service.py    # Core DB operations")
     print("│   │   ├── move_service.py        # Move-related operations")
@@ -145,7 +143,6 @@ mv pokemon.db database/ 2>/dev/null || echo "  pokemon.db not found (will be cre
 mv gen1_pokemon_inserts.sql database/data/
 mv gen1_moves_inserts.sql database/data/
 mv gen1_pokemon_moves_inserts_corrected.sql database/data/
-mv insert.sql database/data/
 
 # Legacy scripts
 mv fetch_gen1_*.py database/legacy/

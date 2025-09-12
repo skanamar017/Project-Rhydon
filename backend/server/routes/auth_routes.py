@@ -3,11 +3,12 @@ import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 
-# Adjust the path to your database as needed
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATABASE = os.path.join(BASE_DIR, 'database', 'pokemon.db')
 
 auth_bp = Blueprint('auth', __name__)
+
+print(f"[AUTH ROUTES] Using database file: {DATABASE}")
 
 def get_db():
     conn = sqlite3.connect(DATABASE)

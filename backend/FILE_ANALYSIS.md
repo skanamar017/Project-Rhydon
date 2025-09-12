@@ -15,7 +15,6 @@
 - `gen1_pokemon_inserts.sql` - Pokemon data
 - `gen1_moves_inserts.sql` - Moves data
 - `gen1_pokemon_moves_inserts_corrected.sql` - Pokemon-moves relationships
-- `insert.sql` - Sample team data
 
 #### **Legacy Data Fetching Scripts:**
 

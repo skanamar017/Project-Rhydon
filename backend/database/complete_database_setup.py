@@ -181,7 +181,16 @@ class PokemonDatabaseSetup:
                     UNIQUE(from_pokemon_id, to_pokemon_id)
                 )
             """)
-            
+
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username VARCHAR(50) NOT NULL UNIQUE,
+                    password_hash VARCHAR(255) NOT NULL,
+                    email VARCHAR(100) NOT NULL UNIQUE
+                )
+            """)
+
             # Create indexes for better performance
             conn.execute("CREATE INDEX IF NOT EXISTS idx_pokemon_pokedex ON Pokemon(pokedex_number)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_pokemon_moves_pokemon ON PokemonMoves(pokemon_id)")
@@ -189,6 +198,7 @@ class PokemonDatabaseSetup:
             conn.execute("CREATE INDEX IF NOT EXISTS idx_evolution_from ON Evolution(from_pokemon_id)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_evolution_to ON Evolution(to_pokemon_id)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_team_pokemon_team ON TeamPokemon(team_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)")
             
             conn.commit()
             
@@ -281,9 +291,15 @@ class PokemonDatabaseSetup:
                 version_data = version_response.json()
                 
                 # Get moves from this generation
-                for move_url in version_data['move_learn_methods'][0]['version_group_details']:
-                    # This approach is complex, let's use a simpler method
-                    pass
+                move_learn_methods = version_data.get('move_learn_methods', [])
+                if move_learn_methods:
+                    version_details = move_learn_methods[0].get('version_group_details')
+                    if version_details:
+                        for move_url in version_details:
+                            # This approach is complex, let's use a simpler method
+                            pass
+                    # If 'version_group_details' is missing, just skip
+                    # (no continue needed here)
             
             # Simpler approach: get moves 1-165 (known Gen 1 range)
             for move_id in range(1, 166):
@@ -657,14 +673,38 @@ class PokemonDatabaseSetup:
         print("\n🎉 Database verification complete!")
 
     def create_sample_team(self):
-        """Create a sample team for testing"""
-        print("\n👥 Creating sample team...")
+        """Create a sample user and team for testing (requires Team.user_id)"""
+        print("\n👥 Creating sample user and team...")
         
         with sqlite3.connect(self.db_path) as conn:
-            # Create team
-            conn.execute("INSERT INTO Team (name) VALUES (?)", ("Sample Team",))
-            team_id = conn.lastrowid
-            
+            # Ensure users table exists
+            cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
+            if not cursor.fetchone():
+                print("❌ 'users' table does not exist. Please ensure your schema includes authentication tables.")
+                return
+
+            # Create a sample user if not exists
+            username = "sampleuser"
+            password_hash = "samplepasswordhash"  # In real use, hash this!
+            email = "sampleuser@example.com"
+            cursor = conn.execute("SELECT id FROM users WHERE username = ?", (username,))
+            row = cursor.fetchone()
+            if row:
+                user_id = row[0]
+                print(f"  Sample user already exists with id: {user_id}")
+            else:
+                cursor = conn.execute(
+                    "INSERT INTO users (username, password_hash, email) VALUES (?, ?, ?)",
+                    (username, password_hash, email)
+                )
+                user_id = cursor.lastrowid
+                print(f"  Created sample user with id: {user_id}")
+
+            # Create team for this user
+            cursor = conn.execute("INSERT INTO Team (name, user_id) VALUES (?, ?)", ("Sample Team", user_id))
+            team_id = cursor.lastrowid
+            print(f"  Created sample team with id: {team_id} for user_id: {user_id}")
+
             # Add sample Pokemon
             sample_pokemon = [
                 (6, "Charizard", 50),    # Charizard
@@ -674,17 +714,16 @@ class PokemonDatabaseSetup:
                 (143, "Snorlax", 52),    # Snorlax
                 (150, "Mewtwo", 70)      # Mewtwo
             ]
-            
+
             for pokemon_id, nickname, level in sample_pokemon:
                 conn.execute("""
                     INSERT INTO TeamPokemon 
                     (team_id, pokemon_id, nickname, level, iv_attack, iv_defense, iv_speed, iv_special)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """, (team_id, pokemon_id, nickname, level, 15, 15, 15, 15))  # Perfect IVs
-            
+
             conn.commit()
-            
-        print(f"✅ Sample team created with ID: {team_id}")
+        print(f"✅ Sample team created with ID: {team_id} for user_id: {user_id}")
 
 
 def main():

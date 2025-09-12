@@ -40,8 +40,7 @@ class PokemonDatabase:
                 sql_files = [
                     "gen1_pokemon_inserts.sql",  # Pokemon data first
                     "gen1_moves_inserts.sql",    # Then moves
-                    "gen1_pokemon_moves_inserts.sql",  # Then pokemon-move relationships
-                    "insert.sql"                 # Finally teams and team pokemon
+                    "gen1_pokemon_moves_inserts.sql"  # Then pokemon-move relationships
                 ]
                 
                 for sql_file in sql_files:
