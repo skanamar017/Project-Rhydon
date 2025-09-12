@@ -192,3 +192,12 @@ IF NOT EXISTS idx_evolution_from ON Evolution
 CREATE INDEX
 IF NOT EXISTS idx_evolution_to ON Evolution
 (to_pokemon_id);
+
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL
+);
+
+ALTER TABLE teams ADD COLUMN user_id INTEGER REFERENCES users
+(id);

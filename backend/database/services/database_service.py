@@ -6,9 +6,35 @@ Handles all database operations without Flask dependencies.
 import sqlite3
 from typing import Optional, List
 import os
-from .models import Team, TeamPokemon, Gen1StatCalculator
+from .models import Team, TeamPokemon, Gen1StatCalculator, User, hash_password, verify_password
 
 class PokemonDatabase:
+    # User Operations
+    def register_user(self, username: str, plain_password: str) -> User:
+        """Register a new user with hashed password. Returns User or raises if username exists."""
+        password_hash = hash_password(plain_password)
+        with sqlite3.connect(self.db_path) as conn:
+            try:
+                cursor = conn.execute(
+                    "INSERT INTO users (username, password_hash) VALUES (?, ?)",
+                    (username, password_hash)
+                )
+                user_id = cursor.lastrowid
+                conn.commit()
+                return User(id=user_id, username=username, password_hash=password_hash)
+            except sqlite3.IntegrityError:
+                raise ValueError("Username already exists")
+
+    def authenticate_user(self, username: str, plain_password: str) -> User:
+        """Authenticate user by username and password. Returns User if valid, else None."""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.execute("SELECT * FROM users WHERE username = ?", (username,))
+            row = cursor.fetchone()
+            if row and verify_password(plain_password, row['password_hash']):
+                return User(id=row['id'], username=row['username'], password_hash=row['password_hash'])
+            return None
+
     def __init__(self, db_path: str = "pokemon.db"):
         # If db_path is just a filename, place it in the database directory
         if not os.path.dirname(db_path):
@@ -60,11 +86,12 @@ class PokemonDatabase:
                 conn.commit()
 
     # Team Operations
-    def create_team(self, team: Team) -> Team:
+    def create_team(self, team: Team, user_id: int) -> Team:
+        """Create a team for a specific user."""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
-                "INSERT INTO Team (name) VALUES (?)",
-                (team.name,)
+                "INSERT INTO Team (name, user_id) VALUES (?, ?)",
+                (team.name, user_id)
             )
             team.id = cursor.lastrowid
             conn.commit()
@@ -79,10 +106,12 @@ class PokemonDatabase:
                 return Team(**dict(row))
         return None
 
-    def get_all_teams(self) -> List[Team]:
+
+    def get_teams_by_user(self, user_id: int) -> List[Team]:
+        """Get all teams belonging to a specific user."""
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
-            cursor = conn.execute("SELECT * FROM Team")
+            cursor = conn.execute("SELECT * FROM Team WHERE user_id = ?", (user_id,))
             rows = cursor.fetchall()
             return [Team(**dict(row)) for row in rows]
 
