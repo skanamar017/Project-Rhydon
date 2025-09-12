@@ -29,17 +29,8 @@ def setup_evolution_system():
         table_exists = cursor.fetchone() is not None
         
         if not table_exists:
-            print("❌ Evolution table not found")
-            print("🚀 Setting up evolution system automatically...")
+            print("❌ Evolution table not found. Please run the database setup script to initialize evolution data.")
             conn.close()
-            
-            # Run the external setup script
-            result = subprocess.run(["python", "setup_evolution_system.py"], 
-                                  capture_output=True, text=True)
-            if result.returncode == 0:
-                print("✅ Evolution system setup completed!")
-            else:
-                print(f"❌ Setup failed: {result.stderr}")
             return True
         
         # Check if table has data
@@ -47,17 +38,8 @@ def setup_evolution_system():
         evolution_count = cursor.fetchone()[0]
         
         if evolution_count == 0:
-            print("❌ Evolution table is empty")
-            print("🚀 Setting up evolution system automatically...")
+            print("❌ Evolution table is empty. Please run the database setup script to initialize evolution data.")
             conn.close()
-            
-            # Run the external setup script
-            result = subprocess.run(["python", "setup_evolution_system.py"], 
-                                  capture_output=True, text=True)
-            if result.returncode == 0:
-                print("✅ Evolution system setup completed!")
-            else:
-                print(f"❌ Setup failed: {result.stderr}")
             return True
         
         # Check if PokemonMoves has evolution moves (rough estimate)
@@ -67,16 +49,8 @@ def setup_evolution_system():
         conn.close()
         
         if total_moves < 4100:  # Should be around 4172 with evolution moves
-            print(f"⚠️  PokemonMoves count ({total_moves}) suggests missing evolution moves")
-            print("🚀 Updating Pokemon moves with evolution data...")
-            
-            # Run the external setup script
-            result = subprocess.run(["python", "setup_evolution_system.py"], 
-                                  capture_output=True, text=True)
-            if result.returncode == 0:
-                print("✅ Evolution system setup completed!")
-            else:
-                print(f"❌ Setup failed: {result.stderr}")
+            print(f"⚠️  PokemonMoves count ({total_moves}) suggests missing evolution moves.")
+            print("Please run the database setup script to update evolution moves.")
             return True
         
         print(f"✅ Evolution system already set up ({evolution_count} evolutions, {total_moves} moves)")
