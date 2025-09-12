@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Simple Pokedex</title>
+</head>
+<body>
+    <h1>Pokedex</h1>
+    <div>
+        <input type="text" id="search" placeholder="Search by name...">
+        <button onclick="loadPokedex()">Search</button>
+    </div>
+    <div id="pokedex"></div>
+    <div id="pokemon-details" style="margin-top:20px;"></div>
+    <script>
+    const BASE_URL = 'http://127.0.0.1:5001';
+    async function loadPokedex() {
+        const search = document.getElementById('search').value;
+        let url = `${BASE_URL}/pokedex?limit=20`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const pokedexDiv = document.getElementById('pokedex');
+    pokedexDiv.innerHTML = '';
+        (data.pokemon || data).forEach(p => {
+            const d = document.createElement('div');
+            d.textContent = `#${p.pokedex_number || p.id} ${p.name} (${p.type1}${p.type2 ? '/' + p.type2 : ''})`;
+            d.style.cursor = 'pointer';
+            d.onclick = async () => {
+                const resp = await fetch(`${BASE_URL}/pokedex/${p.id || p.pokedex_number}`);
+                const details = await resp.json();
+                const detailsDiv = document.getElementById('pokemon-details');
+                detailsDiv.innerHTML = `
+                    <h3>${details.name} (#${details.pokedex_number})</h3>
+                    <p><b>Type:</b> ${details.type1}${details.type2 ? '/' + details.type2 : ''}</p>
+                    <p><b>Base Stats:</b> HP ${details.base_hp}, Atk ${details.base_attack}, Def ${details.base_defense}, Spd ${details.base_speed}, Spc ${details.base_special}</p>
+                    <p><b>Entry:</b> ${details.entry || 'No entry available.'}</p>
+                `;
+            };
+            pokedexDiv.appendChild(d);
+        });
+    }
+    window.onload = loadPokedex;
+    </script>
+</body>
+</html>
