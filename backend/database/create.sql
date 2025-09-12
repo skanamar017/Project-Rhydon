@@ -92,7 +92,11 @@ CREATE TABLE PokemonMoves (
 CREATE TABLE Team (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR
-(100) NOT NULL
+(100) NOT NULL,
+    user_id INTEGER NOT NULL,
+    FOREIGN KEY
+(user_id) REFERENCES users
+(id)
 );
 
 

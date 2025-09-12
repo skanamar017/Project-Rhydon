@@ -5,14 +5,21 @@ from flask_cors import cross_origin
 Flask route handlers for team pokemon management endpoints.
 """
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 from database.database import TeamPokemon, PokemonDatabase
+from routes.auth_utils import login_required
 
 pokemon_bp = Blueprint('pokemon', __name__)
 
 @pokemon_bp.route("/<int:team_id>/TeamPokemon/", methods=["POST"])
+@login_required
 def create_team_pokemon(team_id):
     db = PokemonDatabase()
+    user_id = session['user_id']
+    # Check team ownership
+    team = db.get_team(team_id)
+    if not team or getattr(team, 'user_id', None) != user_id:
+        return jsonify({"error": "Team not found or access denied"}), 403
     try:
         data = request.get_json()
         data['team_id'] = team_id
@@ -34,8 +41,13 @@ def create_team_pokemon(team_id):
         return jsonify({"error": str(e)}), 500
 
 @pokemon_bp.route("/<int:team_id>/TeamPokemon/<int:tp_id>", methods=["GET"])
+@login_required
 def get_team_pokemon(team_id, tp_id):
     db = PokemonDatabase()
+    user_id = session['user_id']
+    team = db.get_team(team_id)
+    if not team or getattr(team, 'user_id', None) != user_id:
+        return jsonify({"error": "Team not found or access denied"}), 403
     tp = db.get_team_pokemon(tp_id)
     if tp:
         return jsonify(tp.model_dump()), 200
@@ -43,13 +55,24 @@ def get_team_pokemon(team_id, tp_id):
 
 @pokemon_bp.route("/<int:team_id>/TeamPokemon/", methods=["GET"])
 @pokemon_bp.route("/<int:team_id>/TeamPokemon", methods=["GET"])
+@login_required
 def get_team_pokemons(team_id):
     db = PokemonDatabase()
+    user_id = session['user_id']
+    team = db.get_team(team_id)
+    if not team or getattr(team, 'user_id', None) != user_id:
+        return jsonify({"error": "Team not found or access denied"}), 403
     tps = db.get_team_pokemons_by_team_id(team_id)
     return jsonify(tps), 200
 
 @pokemon_bp.route("/<int:team_id>/TeamPokemon/count", methods=["GET"])
+@login_required
 def get_team_pokemon_count(team_id):
+    db = PokemonDatabase()
+    user_id = session['user_id']
+    team = db.get_team(team_id)
+    if not team or getattr(team, 'user_id', None) != user_id:
+        return jsonify({"error": "Team not found or access denied"}), 403
     """Get the current number of Pokemon in a team"""
     db = PokemonDatabase()
     try:
@@ -64,7 +87,13 @@ def get_team_pokemon_count(team_id):
         return jsonify({"error": str(e)}), 500
 
 @pokemon_bp.route("/<int:team_id>/TeamPokemon/<int:tp_id>", methods=["PUT"])
+@login_required
 def update_team_pokemon(team_id, tp_id):
+    db = PokemonDatabase()
+    user_id = session['user_id']
+    team = db.get_team(team_id)
+    if not team or getattr(team, 'user_id', None) != user_id:
+        return jsonify({"error": "Team not found or access denied"}), 403
     db = PokemonDatabase()
     try:
         data = request.get_json()
@@ -109,7 +138,13 @@ def update_team_pokemon(team_id, tp_id):
         return jsonify({"error": str(e)}), 500
 
 @pokemon_bp.route("/<int:team_id>/TeamPokemon/<int:tp_id>", methods=["DELETE"])
+@login_required
 def delete_team_pokemon(team_id, tp_id):
+    db = PokemonDatabase()
+    user_id = session['user_id']
+    team = db.get_team(team_id)
+    if not team or getattr(team, 'user_id', None) != user_id:
+        return jsonify({"error": "Team not found or access denied"}), 403
     db = PokemonDatabase()
     try:
         if db.delete_team_pokemon(tp_id):
@@ -121,7 +156,13 @@ def delete_team_pokemon(team_id, tp_id):
         return jsonify({"error": str(e)}), 500
 
 @pokemon_bp.route("/<int:team_id>/TeamPokemon/<int:tp_id>/stats", methods=["GET"])
+@login_required
 def get_team_pokemon_stats_route(team_id, tp_id):
+    db = PokemonDatabase()
+    user_id = session['user_id']
+    team = db.get_team(team_id)
+    if not team or getattr(team, 'user_id', None) != user_id:
+        return jsonify({"error": "Team not found or access denied"}), 403
     """Get calculated stats for a team's Pokémon"""
     db = PokemonDatabase()
     details = db.get_team_pokemon_with_stats(tp_id)
@@ -131,7 +172,13 @@ def get_team_pokemon_stats_route(team_id, tp_id):
 
 @pokemon_bp.route("/<int:team_id>/TeamPokemon/<int:tp_id>/moves", methods=["GET", "PUT", "OPTIONS"])
 @cross_origin()
+@login_required
 def team_pokemon_moves(team_id, tp_id):
+    db = PokemonDatabase()
+    user_id = session['user_id']
+    team = db.get_team(team_id)
+    if not team or getattr(team, 'user_id', None) != user_id:
+        return jsonify({"error": "Team not found or access denied"}), 403
     db = PokemonDatabase()
     tp = db.get_team_pokemon(tp_id)
     if not tp:

@@ -17,10 +17,12 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from routes.team_routes import team_bp
 from routes.pokemon_routes import pokemon_bp
 from routes.move_routes import move_bp
+from routes.auth_routes import auth_bp
 
 def create_app():
     """Create and configure the Flask application"""
     app = Flask(__name__)
+    app.secret_key = 'your_secret_key_here'  # Change this to a secure random value in production
     
     # Configure CORS
     CORS(app)
@@ -29,6 +31,7 @@ def create_app():
     app.register_blueprint(team_bp, url_prefix='/Teams')
     app.register_blueprint(pokemon_bp, url_prefix='/Teams')
     app.register_blueprint(move_bp)
+    app.register_blueprint(auth_bp, url_prefix='/auth')
     
     # Home route
     @app.route("/", methods=["GET"])

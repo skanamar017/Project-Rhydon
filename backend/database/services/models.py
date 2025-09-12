@@ -11,6 +11,7 @@ import math
 class Team(BaseModel):
     id: Optional[int] = None
     name: str
+    user_id: int
 
 class TeamPokemon(BaseModel):
     id: Optional[int] = None

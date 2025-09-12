@@ -63,8 +63,8 @@ class PokemonDatabase:
     def create_team(self, team: Team) -> Team:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
-                "INSERT INTO Team (name) VALUES (?)",
-                (team.name,)
+                "INSERT INTO Team (name, user_id) VALUES (?, ?)",
+                (team.name, team.user_id)
             )
             team.id = cursor.lastrowid
             conn.commit()
@@ -79,18 +79,21 @@ class PokemonDatabase:
                 return Team(**dict(row))
         return None
 
-    def get_all_teams(self) -> List[Team]:
+    def get_all_teams(self, user_id: Optional[int] = None) -> List[Team]:
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
-            cursor = conn.execute("SELECT * FROM Team")
+            if user_id is not None:
+                cursor = conn.execute("SELECT * FROM Team WHERE user_id = ?", (user_id,))
+            else:
+                cursor = conn.execute("SELECT * FROM Team")
             rows = cursor.fetchall()
             return [Team(**dict(row)) for row in rows]
 
     def update_team(self, team_id: int, team: Team) -> Optional[Team]:
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
-                "UPDATE Team SET name = ? WHERE id = ?",
-                (team.name, team_id)
+                "UPDATE Team SET name = ?, user_id = ? WHERE id = ?",
+                (team.name, team.user_id, team_id)
             )
             if conn.total_changes == 0:
                 return None
