@@ -362,94 +362,23 @@ class PokemonDatabase:
             return moves
 
     def get_move_details(self, move_id: int) -> Optional[dict]:
-        """Get detailed information about a move, including Pokémon that can learn it."""
+        """Get detailed information about a move"""
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.execute("""
                 SELECT id, name, type, power, accuracy, pp, effect
                 FROM Moves WHERE id = ?
             """, (move_id,))
+            
             row = cursor.fetchone()
-            if not row:
-                return None
-            move_details = {
-                'id': row['id'],
-                'name': row['name'],
-                'type': row['type'],
-                'power': row['power'],
-                'accuracy': row['accuracy'],
-                'pp': row['pp'],
-                'effect_description': row['effect']
-            }
-            # Get Pokémon that can learn this move
-            poke_cursor = conn.execute("""
-                SELECT p.pokedex_number, p.name, pm.level_learned
-                FROM PokemonMoves pm
-                JOIN Pokemon p ON pm.pokemon_id = p.pokedex_number
-                WHERE pm.move_id = ?
-                ORDER BY pm.level_learned, p.pokedex_number
-            """, (move_id,))
-            move_details['pokemon'] = [
-                {'pokedex_number': r['pokedex_number'], 'name': r['name'], 'level_learned': r['level_learned']} for r in poke_cursor.fetchall()
-            ]
-            return move_details
-    def get_pokedex(self, name_filter: str = None, type_filter: str = None) -> list:
-        """Return a list of all Pokemon, optionally filtered by name or type."""
-        query = "SELECT pokedex_number, name, type1, type2 FROM Pokemon"
-        params = []
-        filters = []
-        if name_filter:
-            filters.append("name LIKE ?")
-            params.append(f"%{name_filter}%")
-        if type_filter:
-            filters.append("(type1 = ? OR type2 = ?)")
-            params.extend([type_filter, type_filter])
-        if filters:
-            query += " WHERE " + " AND ".join(filters)
-        query += " ORDER BY pokedex_number"
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.execute(query, params)
-            return [dict(row) for row in cursor.fetchall()]
-
-    def get_pokemon_details(self, pokedex_number: int) -> dict:
-        """Return detailed info for a single Pokemon, including its moves."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.execute(
-                "SELECT * FROM Pokemon WHERE pokedex_number = ?", (pokedex_number,)
-            )
-            row = cursor.fetchone()
-            if not row:
-                return None
-            pokemon = dict(row)
-            # Get all moves this Pokemon can learn
-            move_cursor = conn.execute(
-                """
-                SELECT m.id, m.name, m.type, m.power, m.accuracy, m.pp, m.effect, pm.level_learned
-                FROM PokemonMoves pm
-                JOIN Moves m ON pm.move_id = m.id
-                WHERE pm.pokemon_id = ?
-                ORDER BY pm.level_learned, m.name
-                """,
-                (pokedex_number,)
-            )
-            pokemon["moves"] = [dict(m) for m in move_cursor.fetchall()]
-            return pokemon
-    
-    def get_movedex(self, move_type=None, search=None, limit=20):
-        """Return a list of moves, optionally filtered by type or search string. Includes effect/description."""
-        query = "SELECT id, name, type, power, accuracy, pp, effect as description FROM Moves WHERE 1=1"
-        params = []
-        if move_type:
-            query += " AND type = ?"
-            params.append(move_type)
-        if search:
-            query += " AND name LIKE ?"
-            params.append(f"%{search}%")
-        query += " ORDER BY name LIMIT ?"
-        params.append(limit)
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.execute(query, params)
-            return [dict(row) for row in cursor.fetchall()]
+            if row:
+                return {
+                    'id': row['id'],
+                    'name': row['name'],
+                    'type': row['type'],
+                    'power': row['power'],
+                    'accuracy': row['accuracy'],
+                    'pp': row['pp'],
+                    'effect_description': row['effect']
+                }
+            return None
