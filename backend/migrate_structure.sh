@@ -22,7 +22,6 @@ mv pokemon.db database/ 2>/dev/null || echo "  pokemon.db not found (will be cre
 mv gen1_pokemon_inserts.sql database/data/
 mv gen1_moves_inserts.sql database/data/
 mv gen1_pokemon_moves_inserts_corrected.sql database/data/
-mv insert.sql database/data/
 
 # Legacy scripts
 mv fetch_gen1_*.py database/legacy/

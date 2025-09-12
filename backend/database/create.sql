@@ -89,10 +89,15 @@ CREATE TABLE PokemonMoves (
 (id)
 );
 
+
 CREATE TABLE Team (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR
-(100) NOT NULL
+(100) NOT NULL,
+    user_id INTEGER,
+    FOREIGN KEY
+(user_id) REFERENCES users
+(id)
 );
 
 
@@ -199,5 +204,4 @@ CREATE TABLE users (
     password_hash TEXT NOT NULL
 );
 
-ALTER TABLE teams ADD COLUMN user_id INTEGER REFERENCES users
-(id);
+

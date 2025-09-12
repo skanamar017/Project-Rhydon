@@ -8,7 +8,6 @@
 - ✅ `gen1_pokemon_inserts.sql` - Pokemon data
 - ✅ `gen1_moves_inserts.sql` - Moves data
 - ✅ `gen1_pokemon_moves_inserts.sql` - Pokemon-Moves relationships
-- ✅ `insert.sql` - Sample team data
 
 ### **Python Files Consolidated:**
 
@@ -122,7 +121,6 @@ from database_service import PokemonDatabase
 - `gen1_pokemon_inserts.sql`
 - `gen1_moves_inserts.sql`
 - `gen1_pokemon_moves_inserts.sql`
-- `insert.sql`
 
 ### **Python Scripts (now in complete_database_setup.py):**
 
