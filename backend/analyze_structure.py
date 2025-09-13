@@ -228,11 +228,11 @@ def main():
     print()
     print("# Old imports:")
     print("from database_service import PokemonDatabase")
-    print("from models import Team, TeamPokemon")
+    print("from models import Team, PartyPokemon")
     print()
     print("# New imports:")
     print("from database.services.database_service import PokemonDatabase")
-    print("from database.services.models import Team, TeamPokemon")
+    print("from database.services.models import Team, PartyPokemon")
     print()
     print("Or create __init__.py files to simplify imports!")
 

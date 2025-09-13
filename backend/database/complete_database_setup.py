@@ -126,19 +126,10 @@ class PokemonDatabaseSetup:
                 )
             """)
             
-            # Team table
+            # PartyPokemon table (no team_id, just up to 6 party Pokemon)
             conn.execute("""
-                CREATE TABLE IF NOT EXISTS Team (
+                CREATE TABLE IF NOT EXISTS PartyPokemon (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name VARCHAR(100) NOT NULL
-                )
-            """)
-            
-            # TeamPokemon table
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS TeamPokemon (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    team_id INTEGER NOT NULL,
                     pokemon_id INTEGER NOT NULL,
                     nickname VARCHAR(50),
                     level INTEGER NOT NULL CHECK(level >= 1 AND level <= 100),
@@ -157,7 +148,6 @@ class PokemonDatabaseSetup:
                     move2_id INTEGER,
                     move3_id INTEGER,
                     move4_id INTEGER,
-                    FOREIGN KEY (team_id) REFERENCES Team(id) ON DELETE CASCADE,
                     FOREIGN KEY (pokemon_id) REFERENCES Pokemon(pokedex_number),
                     FOREIGN KEY (move1_id) REFERENCES Moves(id),
                     FOREIGN KEY (move2_id) REFERENCES Moves(id),
@@ -188,7 +178,7 @@ class PokemonDatabaseSetup:
             conn.execute("CREATE INDEX IF NOT EXISTS idx_pokemon_moves_move ON PokemonMoves(move_id)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_evolution_from ON Evolution(from_pokemon_id)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_evolution_to ON Evolution(to_pokemon_id)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_team_pokemon_team ON TeamPokemon(team_id)")
+            # No team_id column in PartyPokemon; index not needed
             
             conn.commit()
             
@@ -279,11 +269,12 @@ class PokemonDatabaseSetup:
             version_response = requests.get(f"{self.base_url}/version-group/1")  # Red/Blue
             if version_response.status_code == 200:
                 version_data = version_response.json()
-                
-                # Get moves from this generation
-                for move_url in version_data['move_learn_methods'][0]['version_group_details']:
-                    # This approach is complex, let's use a simpler method
-                    pass
+                # Defensive: check for keys before accessing
+                move_learn_methods = version_data.get('move_learn_methods', [])
+                if move_learn_methods and 'version_group_details' in move_learn_methods[0]:
+                    for move_url in move_learn_methods[0]['version_group_details']:
+                        # This approach is complex, let's use a simpler method
+                        pass
             
             # Simpler approach: get moves 1-165 (known Gen 1 range)
             for move_id in range(1, 166):
@@ -656,35 +647,8 @@ class PokemonDatabaseSetup:
             
         print("\n🎉 Database verification complete!")
 
-    def create_sample_team(self):
-        """Create a sample team for testing"""
-        print("\n👥 Creating sample team...")
-        
-        with sqlite3.connect(self.db_path) as conn:
-            # Create team
-            conn.execute("INSERT INTO Team (name) VALUES (?)", ("Sample Team",))
-            team_id = conn.lastrowid
-            
-            # Add sample Pokemon
-            sample_pokemon = [
-                (6, "Charizard", 50),    # Charizard
-                (9, "Blastoise", 48),    # Blastoise
-                (3, "Venusaur", 49),     # Venusaur
-                (25, "Pikachu", 45),     # Pikachu
-                (143, "Snorlax", 52),    # Snorlax
-                (150, "Mewtwo", 70)      # Mewtwo
-            ]
-            
-            for pokemon_id, nickname, level in sample_pokemon:
-                conn.execute("""
-                    INSERT INTO TeamPokemon 
-                    (team_id, pokemon_id, nickname, level, iv_attack, iv_defense, iv_speed, iv_special)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """, (team_id, pokemon_id, nickname, level, 15, 15, 15, 15))  # Perfect IVs
-            
-            conn.commit()
-            
-        print(f"✅ Sample team created with ID: {team_id}")
+
+    # Removed create_sample_team; if you want a sample party, insert up to 6 PartyPokemon directly with no team_id.
 
 
 def main():
@@ -708,10 +672,7 @@ def main():
         # Complete database setup
         setup.setup_complete_database(force_recreate=force_recreate)
         
-        # Create sample team
-        create_sample = input("\nCreate sample team? (y/N): ").lower() == 'y'
-        if create_sample:
-            setup.create_sample_team()
+    # Sample team creation removed (no create_sample_team method)
         
         print("\n" + "="*60)
         print("🎉 Pokemon Database Setup Complete!")

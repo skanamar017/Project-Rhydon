@@ -16,7 +16,7 @@ VALUES
     ('Giovanni'),
     ('Lorelei');
 
-INSERT INTO TeamPokemon
+INSERT INTO PartyPokemon
     (team_id, pokemon_id, nickname, level, iv_attack, iv_defense, iv_speed, iv_special, ev_hp, ev_attack, ev_defense, ev_speed, ev_special, current_hp, status, move1_id, move2_id, move3_id, move4_id)
 VALUES
     -- Ash's Pokémon

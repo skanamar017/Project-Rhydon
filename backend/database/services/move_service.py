@@ -197,8 +197,8 @@ class MoveService:
                 }
             return None
 
-    def update_team_pokemon_moves(self, tp_id: int, move_ids: List[int]) -> bool:
-        """Update moves for a TeamPokemon"""
+    def update_party_pokemon_moves(self, tp_id: int, move_ids: List[int]) -> bool:
+        """Update moves for a PartyPokemon"""
         # Pad move_ids to have exactly 4 elements (with None for empty slots)
         while len(move_ids) < 4:
             move_ids.append(None)
@@ -206,7 +206,7 @@ class MoveService:
         
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("""
-                UPDATE TeamPokemon 
+                UPDATE PartyPokemon 
                 SET move1_id = ?, move2_id = ?, move3_id = ?, move4_id = ?
                 WHERE id = ?
             """, (move_ids[0], move_ids[1], move_ids[2], move_ids[3], tp_id))

@@ -8,7 +8,7 @@ def test_imports():
         print("Testing imports...")
         
         # Test models
-        from models import Team, TeamPokemon, Gen1StatCalculator
+    from models import Team, PartyPokemon, Gen1StatCalculator
         print("✅ Models imported successfully")
         
         # Test database service

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pokémon Party Manager</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f8f8ff; margin: 0; padding: 0; }
+    .container { max-width: 700px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #0001; padding: 32px; }
+    h1 { text-align: center; color: #333; }
+    .party-list { margin: 24px 0; }
+    .party-list table { width: 100%; border-collapse: collapse; }
+    .party-list th, .party-list td { padding: 8px 12px; border-bottom: 1px solid #eee; text-align: left; }
+    .party-list th { background: #f0f0f0; }
+    .actions button { margin-right: 8px; }
+    .add-form { margin-top: 32px; }
+    .add-form input, .add-form select { margin: 4px 0; padding: 6px; width: 100%; box-sizing: border-box; }
+    .add-form label { font-weight: bold; margin-top: 8px; display: block; }
+    .add-form button { margin-top: 12px; width: 100%; }
+    .error { color: #b00; margin: 8px 0; }
+    .success { color: #080; margin: 8px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Pokémon Party Manager</h1>
+    <div class="party-list">
+      <h2>Your Party</h2>
+      <table id="party-table">
+        <thead>
+          <tr>
+            <th>Nickname</th>
+            <th>Pokémon ID</th>
+            <th>Level</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="party-body">
+        </tbody>
+      </table>
+      <div id="party-message"></div>
+    </div>
+    <form class="add-form" id="add-form">
+      <h2>Add Pokémon</h2>
+      <label for="pokemon_id">Pokémon ID</label>
+      <input type="number" id="pokemon_id" name="pokemon_id" min="1" max="151" required>
+      <label for="nickname">Nickname</label>
+      <input type="text" id="nickname" name="nickname" maxlength="50">
+      <label for="level">Level</label>
+      <input type="number" id="level" name="level" min="1" max="100" value="50" required>
+      <button type="submit">Add to Party</button>
+      <div class="error" id="add-error"></div>
+      <div class="success" id="add-success"></div>
+    </form>
+  </div>
+  <script>
+  const API = 'http://localhost:5001/party';
+    const partyBody = document.getElementById('party-body');
+    const partyMessage = document.getElementById('party-message');
+    const addForm = document.getElementById('add-form');
+    const addError = document.getElementById('add-error');
+    const addSuccess = document.getElementById('add-success');
+
+    function fetchParty() {
+      fetch(API + '/')
+        .then(r => r.json())
+        .then(data => {
+          partyBody.innerHTML = '';
+          if (data.length === 0) {
+            partyBody.innerHTML = '<tr><td colspan="4">No Pokémon in party.</td></tr>';
+          } else {
+            data.forEach(p => {
+              partyBody.innerHTML += `<tr>
+                <td>${p.nickname || ''}</td>
+                <td>${p.pokemon_id}</td>
+                <td>${p.level}</td>
+                <td class="actions">
+                  <button onclick="removePokemon(${p.id})">Remove</button>
+                  <button onclick="showMoves(${p.id})">Moves</button>
+                  <button onclick="showStats(${p.id})">Stats</button>
+                </td>
+              </tr>`;
+              partyBody.innerHTML += `<tr id="moves-row-${p.id}" style="display:none;"><td colspan="4"><div id="moves-panel-${p.id}"></div></td></tr>`;
+              partyBody.innerHTML += `<tr id="stats-row-${p.id}" style="display:none;"><td colspan="4"><div id="stats-panel-${p.id}"></div></td></tr>`;
+    function showStats(tp_id) {
+      const row = document.getElementById('stats-row-' + tp_id);
+      const panel = document.getElementById('stats-panel-' + tp_id);
+      if (row.style.display === 'none') {
+        fetch(`${API}/${tp_id}/stats`)
+          .then(r => r.json())
+          .then(stats => {
+            if (stats.error) {
+              panel.innerHTML = `<div class='error'>${stats.error}</div>`;
+            } else {
+              panel.innerHTML = `<b>Calculated Stats</b><br>
+                HP: ${stats.hp}<br>
+                Attack: ${stats.attack}<br>
+                Defense: ${stats.defense}<br>
+                Speed: ${stats.speed}<br>
+                Special: ${stats.special}<br>
+                <button onclick="hideStats(${tp_id})">Close</button>`;
+            }
+            row.style.display = '';
+          });
+      } else {
+        row.style.display = 'none';
+      }
+    }
+
+    function hideStats(tp_id) {
+      document.getElementById('stats-row-' + tp_id).style.display = 'none';
+    }
+
+    window.showStats = showStats;
+    window.hideStats = hideStats;
+            });
+          }
+    function showMoves(tp_id) {
+      const row = document.getElementById('moves-row-' + tp_id);
+      const panel = document.getElementById('moves-panel-' + tp_id);
+      if (row.style.display === 'none') {
+        // Fetch current moves and available moves
+        fetch(`${API}/${tp_id}`)
+          .then(r => r.json())
+          .then(pokemon => {
+            fetch(`http://localhost:5001/movedex/${pokemon.pokemon_id}`)
+              .then(r => r.json())
+              .then(moveset => {
+                // Current moves
+                const currentMoves = [pokemon.move1_id, pokemon.move2_id, pokemon.move3_id, pokemon.move4_id];
+                // Available moves
+                const availableMoves = moveset.moves || [];
+                let html = '<form onsubmit="return saveMoves(event, ' + tp_id + ')">';
+                for (let i = 0; i < 4; i++) {
+                  html += `<label>Move Slot ${i+1}: <select name="move${i+1}"><option value="">--None--</option>`;
+                  availableMoves.forEach(m => {
+                    html += `<option value="${m.id}"${currentMoves[i] === m.id ? ' selected' : ''}>${m.name}</option>`;
+                  });
+                  html += '</select></label><br>';
+                }
+                html += '<button type="submit">Save Moves</button>';
+                html += '<button type="button" onclick="hideMoves(' + tp_id + ')">Cancel</button>';
+                html += '<div id="moves-error-' + tp_id + '" class="error"></div>';
+                html += '<div id="moves-success-' + tp_id + '" class="success"></div>';
+                html += '</form>';
+                panel.innerHTML = html;
+                row.style.display = '';
+              });
+          });
+      } else {
+        row.style.display = 'none';
+      }
+    }
+
+    function hideMoves(tp_id) {
+      document.getElementById('moves-row-' + tp_id).style.display = 'none';
+    }
+
+    window.showMoves = showMoves;
+    window.hideMoves = hideMoves;
+
+    function saveMoves(event, tp_id) {
+      event.preventDefault();
+      const form = event.target;
+      const move_ids = [1,2,3,4].map(i => {
+        const v = form['move'+i].value;
+        return v ? parseInt(v) : null;
+      });
+      fetch(`${API}/${tp_id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          move1_id: move_ids[0],
+          move2_id: move_ids[1],
+          move3_id: move_ids[2],
+          move4_id: move_ids[3]
+        })
+      })
+        .then(r => r.json().then(data => ({ status: r.status, data })))
+        .then(res => {
+          const errorDiv = document.getElementById('moves-error-' + tp_id);
+          const successDiv = document.getElementById('moves-success-' + tp_id);
+          if (res.status === 200) {
+            errorDiv.textContent = '';
+            successDiv.textContent = 'Moves updated!';
+            fetchParty();
+          } else {
+            errorDiv.textContent = res.data.error || 'Error updating moves.';
+            successDiv.textContent = '';
+          }
+        })
+        .catch(() => {
+          const errorDiv = document.getElementById('moves-error-' + tp_id);
+          errorDiv.textContent = 'Network error.';
+        });
+      return false;
+    }
+        });
+      fetch(API + '/count')
+        .then(r => r.json())
+        .then(data => {
+          if (data.pokemon_count >= 6) {
+            addForm.querySelector('button[type="submit"]').disabled = true;
+            partyMessage.textContent = 'Party is full (6 Pokémon).';
+          } else {
+            addForm.querySelector('button[type="submit"]').disabled = false;
+            partyMessage.textContent = '';
+          }
+        });
+    }
+
+    function removePokemon(id) {
+      if (!confirm('Remove this Pokémon from your party?')) return;
+      fetch(API + '/' + id, { method: 'DELETE' })
+        .then(r => r.json())
+        .then(() => fetchParty());
+    }
+
+    addForm.onsubmit = function(e) {
+      e.preventDefault();
+      addError.textContent = '';
+      addSuccess.textContent = '';
+      const pokemon_id = parseInt(addForm.pokemon_id.value);
+      const nickname = addForm.nickname.value.trim();
+      const level = parseInt(addForm.level.value);
+      fetch(API + '/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pokemon_id, nickname, level })
+      })
+        .then(r => r.json().then(data => ({ status: r.status, data })))
+        .then(res => {
+          if (res.status === 201) {
+            addSuccess.textContent = 'Pokémon added!';
+            addForm.reset();
+            fetchParty();
+          } else {
+            addError.textContent = res.data.error || 'Error adding Pokémon.';
+          }
+        })
+        .catch(() => {
+          addError.textContent = 'Network error.';
+        });
+    };
+
+    fetchParty();
+    window.removePokemon = removePokemon;
+  </script>
+</body>
+</html>

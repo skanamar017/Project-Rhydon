@@ -14,7 +14,6 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 # Import blueprints - they'll need to be updated to use backend/ imports
-from routes.team_routes import team_bp
 from routes.pokemon_routes import pokemon_bp
 from routes.move_routes import move_bp
 
@@ -26,9 +25,8 @@ def create_app():
     CORS(app)
     
     # Register blueprints with URL prefixes
-    app.register_blueprint(team_bp, url_prefix='/Teams')
-    app.register_blueprint(pokemon_bp, url_prefix='/Teams')
     app.register_blueprint(move_bp)
+    app.register_blueprint(pokemon_bp, url_prefix='/party')
     
     # Home route
     @app.route("/", methods=["GET"])

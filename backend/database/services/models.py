@@ -8,13 +8,9 @@ from pydantic import BaseModel
 import random
 import math
 
-class Team(BaseModel):
-    id: Optional[int] = None
-    name: str
 
-class TeamPokemon(BaseModel):
+class PartyPokemon(BaseModel):
     id: Optional[int] = None
-    team_id: int
     pokemon_id: int
     nickname: Optional[str] = None
     level: int
