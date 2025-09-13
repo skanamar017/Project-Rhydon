@@ -5,6 +5,7 @@ Simplified and modular Flask application for Pokemon team management.
 from flask import Flask
 from flask_cors import CORS
 from routes.pokemon_routes import pokemon_bp
+from routes.team_routes import team_bp
 from routes.move_routes import move_bp
 from evolution_utils import setup_evolution_system
 
@@ -14,8 +15,9 @@ def create_app():
     CORS(app)
     
     # Register blueprints
-    app.register_blueprint(pokemon_bp, url_prefix='/party')
-    app.register_blueprint(move_bp, url_prefix='/')
+    app.register_blueprint(pokemon_bp, url_prefix='/pokemon')
+    app.register_blueprint(team_bp, url_prefix='/teams')
+    app.register_blueprint(move_bp, url_prefix='/moves')
     
     @app.route("/", methods=["GET"])
     def home():

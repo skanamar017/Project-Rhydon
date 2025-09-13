@@ -6,7 +6,8 @@ Flask route handlers for team pokemon management endpoints.
 """
 
 from flask import Blueprint, request, jsonify
-from database.database import PartyPokemon, PokemonDatabase
+from backend.models import PartyPokemon
+from backend.database_service import PokemonDatabase
 
 pokemon_bp = Blueprint('pokemon', __name__)
 

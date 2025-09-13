@@ -4,8 +4,10 @@ Flask route handlers for move management endpoints.
 
 from flask import Blueprint, request, jsonify
 import sqlite3
-from database.database import Gen1StatCalculator, PokemonDatabase
+from database.database import Gen1StatCalculator
 from flask_cors import cross_origin
+from backend.models import PartyPokemon
+from backend.database_service import PokemonDatabase
 
 move_bp = Blueprint('moves', __name__)
 
