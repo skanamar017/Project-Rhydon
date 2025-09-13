@@ -1,11 +1,26 @@
 
-from flask import Blueprint, request, jsonify
+# --- Imports ---
 import uuid
+from flask import Blueprint, request, jsonify
+from routes.pokemon_routes import get_team_pokemons
 
+# --- Blueprint ---
 battle_routes = Blueprint('battle_routes', __name__)
 
-# In-memory storage for battles (for demo purposes)
+
+# In-memory storage for battles and parties (for demo purposes)
 battles = {}
+parties = {}
+
+@battle_routes.route('/party/create', methods=['POST'])
+def create_party():
+	data = request.get_json()
+	party = data.get('party', [])
+	if not party:
+		return jsonify({'error': 'Party data required.'}), 400
+	party_id = str(uuid.uuid4())
+	parties[party_id] = party
+	return jsonify({'party_id': party_id, 'message': 'Party created.'})
 
 def gen1_damage(level, power, atk, defense):
 	"""
@@ -30,19 +45,29 @@ def initialize_party(party):
 @battle_routes.route('/battle/start', methods=['POST'])
 def start_battle():
 	data = request.get_json()
+	# Accept either full teams or party_ids
 	teams = data.get('teams', [])
-	if len(teams) != 2:
-		return jsonify({'error': 'Exactly two teams required.'}), 400
+	party_ids = data.get('party_ids', [])
+	if teams and len(teams) == 2:
+		team_parties = [teams[0].get('party', []), teams[1].get('party', [])]
+	elif party_ids and len(party_ids) == 2:
+		# Look up parties by ID
+		try:
+			team_parties = [parties[party_ids[0]], parties[party_ids[1]]]
+		except KeyError:
+			return jsonify({'error': 'One or both party IDs not found.'}), 404
+	else:
+		return jsonify({'error': 'Provide either two teams or two party_ids.'}), 400
+
 	battle_id = str(uuid.uuid4())
-	# Each team: { 'party': [pokemon, ...] }
 	battles[battle_id] = {
 		'teams': [
 			{
-				'party': initialize_party(teams[0].get('party', [])),
+				'party': initialize_party(team_parties[0]),
 				'active_idx': 0
 			},
 			{
-				'party': initialize_party(teams[1].get('party', [])),
+				'party': initialize_party(team_parties[1]),
 				'active_idx': 0
 			}
 		],
@@ -64,22 +89,38 @@ def make_move():
 	if battle['state'] != 'ongoing':
 		return jsonify({'error': 'Battle is over.', 'winner': battle['winner']}), 400
 
-	# For demo: both teams attack each other in order
+
+	# Determine move order by speed stat
 	t0 = battle['teams'][0]
 	t1 = battle['teams'][1]
 	p0 = t0['party'][t0['active_idx']]
 	p1 = t1['party'][t1['active_idx']]
-
-	# Dummy move data: {'move': 'Tackle', 'power': 40}
 	m0 = moves[0]
 	m1 = moves[1]
-	# For demo, use level, attack, defense from party dict
-	dmg0 = gen1_damage(p0['level'], m0.get('power', 40), p0.get('ev_attack', 50), p1.get('ev_defense', 50))
-	dmg1 = gen1_damage(p1['level'], m1.get('power', 40), p1.get('ev_attack', 50), p0.get('ev_defense', 50))
+	speed0 = p0.get('ev_speed', 50)
+	speed1 = p1.get('ev_speed', 50)
 
-	# Apply damage
-	p1['current_hp'] = max(0, p1['current_hp'] - dmg0)
-	p0['current_hp'] = max(0, p0['current_hp'] - dmg1)
+	# If speeds are equal, team 0 goes first
+	if speed0 >= speed1:
+		# Team 0 attacks first
+		dmg0 = gen1_damage(p0['level'], m0.get('power', 40), p0.get('ev_attack', 50), p1.get('ev_defense', 50))
+		p1['current_hp'] = max(0, p1['current_hp'] - dmg0)
+		# If p1 survived, it attacks back
+		if p1['current_hp'] > 0:
+			dmg1 = gen1_damage(p1['level'], m1.get('power', 40), p1.get('ev_attack', 50), p0.get('ev_defense', 50))
+			p0['current_hp'] = max(0, p0['current_hp'] - dmg1)
+		else:
+			dmg1 = 0
+	else:
+		# Team 1 attacks first
+		dmg1 = gen1_damage(p1['level'], m1.get('power', 40), p1.get('ev_attack', 50), p0.get('ev_defense', 50))
+		p0['current_hp'] = max(0, p0['current_hp'] - dmg1)
+		# If p0 survived, it attacks back
+		if p0['current_hp'] > 0:
+			dmg0 = gen1_damage(p0['level'], m0.get('power', 40), p0.get('ev_attack', 50), p1.get('ev_defense', 50))
+			p1['current_hp'] = max(0, p1['current_hp'] - dmg0)
+		else:
+			dmg0 = 0
 
 	log_entry = {
 		'turn': battle['turn'],
@@ -124,3 +165,17 @@ def battle_status():
 		'teams': battle['teams'],
 		'winner': battle['winner']
 	})
+
+@battle_routes.route('/party/from_team/<int:team_id>', methods=['POST'])
+def create_party_from_team(team_id):
+	# Use the get_team_pokemons function from pokemon_routes
+	# It returns a Flask Response, so we need to extract the JSON data
+	resp = get_team_pokemons(team_id)
+	if resp.status_code != 200:
+		return resp
+	party = resp.get_json()
+	if not party:
+		return jsonify({'error': 'No Pokémon found for this team.'}), 404
+	party_id = str(uuid.uuid4())
+	parties[party_id] = party
+	return jsonify({'party_id': party_id, 'message': f'Party created from team {team_id}.'})
