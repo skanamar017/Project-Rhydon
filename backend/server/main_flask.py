@@ -17,6 +17,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from routes.team_routes import team_bp
 from routes.pokemon_routes import pokemon_bp
 from routes.move_routes import move_bp
+# Add battle_routes import
+from routes.battle_routes import battle_routes
 
 def create_app():
     """Create and configure the Flask application"""
@@ -29,6 +31,8 @@ def create_app():
     app.register_blueprint(team_bp, url_prefix='/Teams')
     app.register_blueprint(pokemon_bp, url_prefix='/Teams')
     app.register_blueprint(move_bp)
+    # Register battle sim routes (no prefix for simplicity)
+    app.register_blueprint(battle_routes)
     
     # Home route
     @app.route("/", methods=["GET"])
