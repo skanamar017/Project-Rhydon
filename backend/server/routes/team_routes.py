@@ -1,3 +1,4 @@
+
 """
 Flask route handlers for team management endpoints.
 Separated from main Flask app for better organization.
@@ -49,3 +50,9 @@ def delete_team(team_id):
     if db.delete_team(team_id):
         return jsonify({"message": "Team deleted successfully"}), 200
     return jsonify({"error": "Team not found"}), 404
+
+@team_bp.route("/pokemon_list", methods=["GET"])
+def get_pokemon_list():
+    db = PokemonDatabase()
+    pokemon = db.get_all_pokemon()
+    return jsonify(pokemon), 200

@@ -338,13 +338,12 @@ def main():
     print("=" * 50)
     
     # Check if database exists
-    db_path = "pokemon.db"
+    db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'pokemon.db'))
     if not os.path.exists(db_path):
         print(f"❌ Error: Database file '{db_path}' not found!")
-        print("Please make sure you're running this script from the backend directory")
-        print("and that the Pokemon database has been created.")
+        print("Please make sure the Pokemon database has been created at the correct location.")
         return
-    
+
     # Connect to database
     try:
         conn = sqlite3.connect(db_path)

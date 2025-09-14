@@ -9,6 +9,7 @@ import os
 from .models import Team, TeamPokemon, Gen1StatCalculator
 
 class PokemonDatabase:
+
     def __init__(self, db_path: str = "pokemon.db"):
         # If db_path is just a filename, place it in the database directory
         if not os.path.dirname(db_path):
@@ -382,3 +383,10 @@ class PokemonDatabase:
                     'effect_description': row['effect']
                 }
             return None
+    
+    def get_all_pokemon(self) -> list:
+        """Return a list of all Pokémon with id and name."""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.execute("SELECT id, name FROM Pokemon ORDER BY id")
+            return [dict(row) for row in cursor.fetchall()]
