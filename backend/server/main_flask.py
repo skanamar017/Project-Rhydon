@@ -21,16 +21,16 @@ from routes.move_routes import move_bp
 from routes.battle_routes import battle_routes
 
 def create_app():
-    # --- Inter-server communication example ---
     from flask import request
 
-    @app.route('/receive_message', methods=['POST'])
+    def home():
+        return {"message": "Pokemon Team API"}
+
     def receive_message():
         data = request.json
         print("Received from other server:", data)
         return jsonify({"status": "received", "echo": data})
 
-    @app.route('/send_to_other_server', methods=['POST'])
     def send_to_other_server():
         import requests
         # You can change this port to the other instance's port (e.g., 5000 or 5001)
@@ -41,24 +41,24 @@ def create_app():
             return jsonify({"response_from_other": response.json()})
         except Exception as e:
             return jsonify({"error": str(e)}), 500
-    """Create and configure the Flask application"""
+
     app = Flask(__name__)
-    
+
     # Configure CORS
     CORS(app)
-    
+
     # Register blueprints with URL prefixes
     app.register_blueprint(team_bp, url_prefix='/Teams')
     app.register_blueprint(pokemon_bp, url_prefix='/Teams')
     app.register_blueprint(move_bp)
     # Register battle sim routes (no prefix for simplicity)
     app.register_blueprint(battle_routes)
-    
-    # Home route
-    @app.route("/", methods=["GET"])
-    def home():
-        return {"message": "Pokemon Team API"}
-    
+
+    # Register all routes using add_url_rule
+    app.add_url_rule('/', view_func=home, methods=['GET'])
+    app.add_url_rule('/receive_message', view_func=receive_message, methods=['POST'])
+    app.add_url_rule('/send_to_other_server', view_func=send_to_other_server, methods=['POST'])
+
     return app
 
 # Create the app instance
@@ -91,7 +91,7 @@ def setup_evolution_system():
             conn.close()
             
             # Run the external setup script from the legacy directory
-            script_path = os.path.join("..", "database", "legacy", "setup_evolution_system.py")
+            script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'database', 'legacy', 'setup_evolution_system.py'))
             result = subprocess.run(["python", script_path], 
                                   capture_output=True, text=True)
             if result.returncode == 0:
@@ -110,7 +110,7 @@ def setup_evolution_system():
             conn.close()
             
             # Run the external setup script from the legacy directory
-            script_path = os.path.join("..", "database", "legacy", "setup_evolution_system.py")
+            script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'database', 'legacy', 'setup_evolution_system.py'))
             result = subprocess.run(["python", script_path], 
                                   capture_output=True, text=True)
             if result.returncode == 0:
@@ -130,7 +130,7 @@ def setup_evolution_system():
             print("🚀 Updating Pokemon moves with evolution data...")
             
             # Run the external setup script from the legacy directory
-            script_path = os.path.join("..", "database", "legacy", "setup_evolution_system.py")
+            script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'database', 'legacy', 'setup_evolution_system.py'))
             result = subprocess.run(["python", script_path], 
                                   capture_output=True, text=True)
             if result.returncode == 0:
