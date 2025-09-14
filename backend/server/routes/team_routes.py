@@ -20,12 +20,18 @@ def create_team():
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
+
 @team_bp.route("/<int:team_id>", methods=["GET"])
 def get_team(team_id):
     db = PokemonDatabase()
     team = db.get_team(team_id)
     if team:
-        return jsonify(team.model_dump()), 200
+        # Fetch Pokémon for this team
+        pokemons = db.get_team_pokemons_by_team_id(team_id)
+        print(f"[DEBUG] Team {team_id} pokemons: {pokemons}")
+        team_data = team.model_dump()
+        team_data["pokemon"] = pokemons
+        return jsonify(team_data), 200
     return jsonify({"error": "Team not found"}), 404
 
 @team_bp.route("/", methods=["GET"])

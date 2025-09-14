@@ -10,14 +10,12 @@ from .models import Team, TeamPokemon, Gen1StatCalculator
 
 class PokemonDatabase:
 
-    def __init__(self, db_path: str = "pokemon.db"):
-        # If db_path is just a filename, place it in the database directory
-        if not os.path.dirname(db_path):
-            service_dir = os.path.dirname(os.path.abspath(__file__))
-            database_dir = os.path.dirname(service_dir)  # Go up one level to database/
-            self.db_path = os.path.join(database_dir, db_path)
-        else:
-            self.db_path = db_path
+    def __init__(self, db_path: str = None):
+        # Always use the absolute path to backend/database/pokemon.db
+        service_dir = os.path.dirname(os.path.abspath(__file__))
+        database_dir = os.path.dirname(service_dir)  # Go up one level to database/
+        self.db_path = os.path.join(database_dir, "pokemon.db")
+        print(f"[DEBUG] Using database file: {self.db_path}")
         self.init_db()
 
     def init_db(self):

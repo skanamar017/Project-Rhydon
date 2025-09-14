@@ -44,7 +44,10 @@ function TeamManager() {
     setLoading(true);
     fetch(`/Teams/${team.id}`)
       .then(res => res.json())
-      .then(data => setTeamPokemon(data.pokemon || []))
+      .then(data => {
+        console.log('Team details response:', data);
+        setTeamPokemon(data.pokemon || []);
+      })
       .catch(() => setError('Failed to load team Pokémon'))
       .finally(() => setLoading(false));
   };
@@ -77,7 +80,7 @@ function TeamManager() {
           <ul>
             {teamPokemon.length === 0 && <li>No Pokémon yet.</li>}
             {teamPokemon.map(p => (
-              <li key={p.id || p.pokemon_id}>{p.name}</li>
+              <li key={p.id || p.pokemon_id}>{p.pokemon_name}</li>
             ))}
           </ul>
         </div>
