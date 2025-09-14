@@ -1,3 +1,4 @@
+# Start a battle using two team IDs from the database
 
 # --- Imports ---
 import uuid
@@ -179,3 +180,41 @@ def create_party_from_team(team_id):
 	party_id = str(uuid.uuid4())
 	parties[party_id] = party
 	return jsonify({'party_id': party_id, 'message': f'Party created from team {team_id}.'})
+
+@battle_routes.route('/battle/start_from_teams', methods=['POST'])
+def start_battle_from_teams():
+	data = request.get_json()
+	team_ids = data.get('team_ids', [])
+	if not team_ids or len(team_ids) != 2:
+		return jsonify({'error': 'Provide exactly two team_ids.'}), 400
+
+	# Fetch parties from DB using get_team_pokemons
+	parties_data = []
+	for tid in team_ids:
+		resp = get_team_pokemons(tid)
+		if resp.status_code != 200:
+			return jsonify({'error': f'Could not fetch team {tid}.'}), 404
+		party = resp.get_json()
+		if not party:
+			return jsonify({'error': f'Team {tid} has no Pokémon.'}), 404
+		parties_data.append(party)
+
+	# Use the same logic as /battle/start
+	battle_id = str(uuid.uuid4())
+	battles[battle_id] = {
+		'teams': [
+			{
+				'party': initialize_party(parties_data[0]),
+				'active_idx': 0
+			},
+			{
+				'party': initialize_party(parties_data[1]),
+				'active_idx': 0
+			}
+		],
+		'state': 'ongoing',
+		'log': [],
+		'turn': 1,
+		'winner': None
+	}
+	return jsonify({'battle_id': battle_id, 'message': 'Battle started from teams.'})

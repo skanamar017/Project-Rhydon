@@ -19,71 +19,80 @@ VALUES
 INSERT INTO TeamPokemon
     (team_id, pokemon_id, nickname, level, iv_attack, iv_defense, iv_speed, iv_special, ev_hp, ev_attack, ev_defense, ev_speed, ev_special, current_hp, status, move1_id, move2_id, move3_id, move4_id)
 VALUES
-    -- Ash's Pokémon
-    (1, 25, 'Sparky', 10, 15, 12, 14, 13, 0, 0, 0, 0, 0, 35, 'Healthy', NULL, NULL, NULL, NULL),
-    -- Pikachu (Thunder Punch)
-    (1, 1, 'Leafy', 8, 10, 11, 8, 12, 0, 0, 0, 0, 0, 45, 'Healthy', NULL, NULL, NULL, NULL),
-    -- Bulbasaur (Pound)
-    (1, 4, 'Flare', 9, 12, 9, 13, 11, 0, 0, 0, 0, 0, 39, 'Healthy', NULL, NULL, NULL, NULL),
-    -- Charmander (Fire Punch)
-    (1, 7, 'Bubbles', 8, 8, 14, 10, 9, 0, 0, 0, 0, 0, 44, 'Healthy', NULL, NULL, NULL, NULL),
-    -- Squirtle (Pound)
+    (1, 25, 'Pikachu', 50, 3, 7, 12, 0, 0, 0, 0, 0, 0, 120, 'Healthy', 85, 98, 104, 97),
+    -- Thunderbolt, Quick Attack, Thunder, Double Team
+    (1, 3, 'Bulbasaur', 45, 8, 2, 15, 10, 0, 0, 0, 0, 0, 130, 'Healthy', 75, 73, 22, 77),
+    -- Razor Leaf, Sleep Powder, Leech Seed, SolarBeam
+    (1, 6, 'Charizard', 55, 1, 14, 6, 11, 0, 0, 0, 0, 0, 150, 'Healthy', 53, 126, 163, 241),
+    -- Flamethrower, Fly, Slash, Earthquake
+    (1, 9, 'Squirtle', 43, 13, 2, 7, 4, 0, 0, 0, 0, 0, 110, 'Healthy', 57, 58, 59, 127),
+    -- Surf, Ice Beam, Bite, Skull Bash
 
-    -- Misty's Pokémon
-    (2, 120, 'Sting', 12, 11, 10, 15, 12, 0, 0, 0, 0, 0, 30, 'Healthy', NULL, NULL, NULL, NULL),
-    -- Staryu (Pound)
-    (2, 121, 'Shelly', 14, 13, 12, 14, 15, 0, 0, 0, 0, 0, 60, 'Healthy', NULL, NULL, NULL, NULL),
-    -- Starmie (Pound)
-    (2, 54, 'Quackers', 10, 9, 8, 7, 11, 0, 0, 0, 0, 0, 50, 'Healthy', NULL, NULL, NULL, NULL),
-    -- Psyduck (Pound)
+    (2, 121, 'Starmie', 55, 6, 10, 1, 8, 0, 0, 0, 0, 0, 140, 'Healthy', 58, 62, 105, 94),
+    -- Surf, Psychic, Thunderbolt, Ice Beam
+    (2, 120, 'Staryu', 48, 11, 0, 14, 2, 0, 0, 0, 0, 0, 110, 'Healthy', 58, 62, 61, 105),
+    -- Surf, Psychic, Thunderbolt, Recover
+    (2, 54, 'Psyduck', 44, 7, 13, 5, 9, 0, 0, 0, 0, 0, 100, 'Healthy', 58, 50, 133, 60),
+    -- Surf, Confusion, Disable, Screech
+    (2, 55, 'Golduck', 52, 4, 12, 3, 7, 0, 0, 0, 0, 0, 130, 'Healthy', 58, 62, 133, 94),
+    -- Surf, Psychic, Screech, Ice Beam
 
-    -- Brock's Pokémon
-    (3, 95, 'Onixy', 15, 8, 15, 6, 5, 0, 0, 0, 0, 0, 35, 'Healthy', NULL, NULL, NULL, NULL),
-    -- Onix (Pound)
-    (3, 74, 'Rocky', 12, 14, 13, 4, 6, 0, 0, 0, 0, 0, 40, 'Healthy', NULL, NULL, NULL, NULL),
-    -- Geodude (Pound)
-    (3, 41, 'Zubats', 10, 9, 7, 11, 8, 0, 0, 0, 0, 0, 40, 'Healthy', NULL, NULL, NULL, NULL),
-    -- Zubat (Gust)
+    (3, 95, 'Onix', 50, 2, 11, 8, 13, 0, 0, 0, 0, 0, 120, 'Healthy', 89, 157, 36, 38),
+    -- Rock Slide, Earthquake, Bind, Screech
+    (3, 76, 'Golem', 54, 9, 5, 0, 6, 0, 0, 0, 0, 0, 140, 'Healthy', 89, 157, 153, 36),
+    -- Rock Slide, Earthquake, Explosion, Bind
+    (3, 74, 'Geodude', 44, 1, 12, 3, 10, 0, 0, 0, 0, 0, 100, 'Healthy', 89, 157, 153, 36),
+    -- Rock Slide, Earthquake, Explosion, Bind
+    (3, 42, 'Golbat', 46, 8, 6, 11, 15, 0, 0, 0, 0, 0, 110, 'Healthy', 103, 114, 44, 17),
+    -- Wing Attack, Bite, Confuse Ray, Toxic
 
-    -- Lt. Surge's Pokémon
-    (4, 26, 'Bolt', 20, 15, 10, 15, 12, 0, 0, 0, 0, 0, 60, 'Healthy', NULL, NULL, NULL, NULL),
-    -- Raichu (Thunder Punch)
-    (4, 25, 'Sparky Jr.', 18, 14, 8, 13, 11, 0, 0, 0, 0, 0, 35, 'Healthy', NULL, NULL, NULL, NULL),
-    -- Pikachu (Thunder Punch)
+    (4, 26, 'Raichu', 56, 0, 13, 2, 14, 0, 0, 0, 0, 0, 130, 'Healthy', 85, 98, 104, 97),
+    -- Thunderbolt, Quick Attack, Thunder, Double Team
+    (4, 100, 'Electrode', 52, 6, 11, 8, 1, 0, 0, 0, 0, 0, 110, 'Healthy', 85, 97, 120, 49),
+    -- Thunderbolt, Double Team, Explosion, Swift
+    (4, 82, 'Magneton', 50, 3, 7, 12, 0, 0, 0, 0, 0, 0, 120, 'Healthy', 85, 97, 49, 63),
+    -- Thunderbolt, Double Team, Swift, Thunder Wave
 
-    -- Erika's Pokémon
-    (5, 71, 'Vile', 16, 12, 11, 13, 15, 0, 0, 0, 0, 0, 80, 'Healthy', NULL, NULL, NULL, NULL),
-    -- Victreebel (Pound)
-    (5, 43, 'Oddy', 14, 8, 9, 6, 12, 0, 0, 0, 0, 0, 45, 'Healthy', NULL, NULL, NULL, NULL),
-    -- Oddish (Pound)
+    (5, 71, 'Victreebel', 54, 10, 4, 13, 7, 0, 0, 0, 0, 0, 140, 'Healthy', 75, 73, 22, 77),
+    -- Razor Leaf, Sleep Powder, Leech Seed, SolarBeam
+    (5, 45, 'Vileplume', 52, 2, 8, 6, 12, 0, 0, 0, 0, 0, 130, 'Healthy', 80, 73, 77, 22),
+    -- Petal Dance, Sleep Powder, SolarBeam, Leech Seed
+    (5, 114, 'Tangela', 48, 5, 9, 11, 3, 0, 0, 0, 0, 0, 120, 'Healthy', 22, 77, 73, 21),
+    -- Leech Seed, SolarBeam, Sleep Powder, Bind
 
-    -- Koga's Pokémon
-    (6, 110, 'Weezy', 17, 13, 14, 9, 12, 0, 0, 0, 0, 0, 65, 'Healthy', NULL, NULL, NULL, NULL),
-    -- Weezing (Pound)
-    (6, 89, 'Muk', 18, 15, 11, 7, 10, 0, 0, 0, 0, 0, 105, 'Healthy', NULL, NULL, NULL, NULL),
-    -- Muk (Pound)
-    (6, 48, 'Venonat', 12, 7, 8, 9, 6, 0, 0, 0, 0, 0, 60, 'Healthy', NULL, NULL, NULL, NULL),
-    -- Venonat (Pound)
+    (6, 110, 'Weezing', 56, 14, 0, 7, 13, 0, 0, 0, 0, 0, 140, 'Healthy', 124, 120, 92, 53),
+    -- Sludge, Explosion, Smokescreen, Toxic
+    (6, 89, 'Muk', 54, 11, 2, 15, 8, 0, 0, 0, 0, 0, 130, 'Healthy', 124, 120, 92, 53),
+    -- Sludge, Explosion, Smokescreen, Toxic
+    (6, 49, 'Venomoth', 50, 6, 12, 0, 4, 0, 0, 0, 0, 0, 120, 'Healthy', 93, 92, 60, 94),
+    -- Psychic, Toxic, Stun Spore, Sleep Powder
 
-    -- Sabrina's Pokémon
-    (7, 65, 'Alak', 20, 10, 8, 15, 15, 0, 0, 0, 0, 0, 55, 'Healthy', NULL, NULL, NULL, NULL),
-    -- Alakazam (Pound)
-    (7, 64, 'Kadabra', 18, 9, 7, 14, 14, 0, 0, 0, 0, 0, 40, 'Healthy', NULL, NULL, NULL, NULL),
-    -- Kadabra (Pound)
+    (7, 65, 'Alakazam', 60, 13, 1, 5, 9, 0, 0, 0, 0, 0, 150, 'Healthy', 94, 105, 93, 60),
+    -- Psychic, Recover, Reflect, Thunder Wave
+    (7, 122, 'Mr. Mime', 54, 7, 4, 11, 2, 0, 0, 0, 0, 0, 120, 'Healthy', 93, 60, 105, 94),
+    -- Psychic, Thunder Wave, Reflect, Barrier
+    (7, 49, 'Venomoth', 52, 8, 13, 6, 10, 0, 0, 0, 0, 0, 110, 'Healthy', 93, 92, 60, 94),
+    -- Psychic, Toxic, Stun Spore, Sleep Powder
 
-    -- Blaine's Pokémon
-    (8, 126, 'Magmy', 18, 14, 9, 12, 15, 0, 0, 0, 0, 0, 65, 'Healthy', NULL, NULL, NULL, NULL),
-    -- Magmar (Fire Punch)
-    (8, 77, 'Ponyta', 16, 11, 8, 10, 9, 0, 0, 0, 0, 0, 50, 'Healthy', NULL, NULL, NULL, NULL),
-    -- Ponyta (Fire Punch)
 
-    -- Giovanni's Pokémon
-    (9, 112, 'Rokky', 22, 15, 15, 8, 10, 0, 0, 0, 0, 0, 105, 'Healthy', 1, NULL, NULL, NULL),
-    -- Rhydon (Pound)
-    (9, 34, 'Nido', 20, 14, 12, 13, 13, 0, 0, 0, 0, 0, 81, 'Healthy', 1, NULL, NULL, NULL),
-    -- Nidoking (Pound)
+    (8, 126, 'Magmar', 58, 2, 11, 8, 1, 0, 0, 0, 0, 0, 140, 'Healthy', 53, 126, 241, 126),
+    -- Flamethrower, Fire Punch, Hyper Beam, Confuse Ray
+    (8, 78, 'Rapidash', 54, 10, 4, 13, 7, 0, 0, 0, 0, 0, 130, 'Healthy', 53, 126, 241, 36),
+    -- Flamethrower, Fire Spin, Hyper Beam, Stomp
+    (8, 59, 'Arcanine', 60, 2, 8, 6, 12, 0, 0, 0, 0, 0, 150, 'Healthy', 53, 126, 241, 36),
+    -- Flamethrower, Fire Blast, Hyper Beam, Take Down
 
-    -- Lorelei's Pokémon
-    (10, 121, 'Stary', 18, 12, 13, 15, 14, 0, 0, 0, 0, 0, 60, 'Healthy', 8, NULL, NULL, NULL),
-    -- Starmie (Ice Punch)
-    (10, 91, 'Cloy', 16, 13, 15, 11, 12, 0, 0, 0, 0, 0, 50, 'Healthy', 8, NULL, NULL, NULL);     -- Cloyster (Ice Punch)
+    (9, 112, 'Rhydon', 60, 5, 9, 11, 3, 0, 0, 0, 0, 0, 160, 'Healthy', 157, 89, 36, 38),
+    -- Earthquake, Rock Slide, Stomp, Tail Whip
+    (9, 31, 'Nidoqueen', 56, 14, 0, 7, 13, 0, 0, 0, 0, 0, 140, 'Healthy', 157, 89, 36, 38),
+    -- Earthquake, Rock Slide, Body Slam, Tail Whip   
+    (9, 34, 'Nidoking', 58, 11, 2, 15, 8, 0, 0, 0, 0, 0, 145, 'Healthy', 157, 89, 36, 38),
+    -- Earthquake, Rock Slide, Body Slam, Tail Whip
+
+    (10, 131, 'Lapras', 56, 7, 4, 11, 15, 0, 0, 0, 0, 0, 150, 'Healthy', 58, 62, 105, 94),
+    -- Surf, Psychic, Ice Beam, Thunderbolt
+    (10, 91, 'Cloyster', 54, 8, 13, 6, 10, 0, 0, 0, 0, 0, 130, 'Healthy', 58, 105, 120, 49),
+    -- Surf, Ice Beam, Explosion, Spike Cannon
+    (10, 87, 'Dewgong', 52, 13, 1, 5, 9, 0, 0, 0, 0, 0, 120, 'Healthy', 58, 105, 62, 94),
+    -- Surf, Ice Beam, Psychic, Rest
+    (10, 124, 'Jynx', 50, 4, 12, 0, 14, 0, 0, 0, 0, 0, 110, 'Healthy', 94, 105, 93, 60); -- Psychic, Ice Beam, Lovely Kiss, Rest

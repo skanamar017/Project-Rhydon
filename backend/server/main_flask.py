@@ -21,6 +21,26 @@ from routes.move_routes import move_bp
 from routes.battle_routes import battle_routes
 
 def create_app():
+    # --- Inter-server communication example ---
+    from flask import request
+
+    @app.route('/receive_message', methods=['POST'])
+    def receive_message():
+        data = request.json
+        print("Received from other server:", data)
+        return jsonify({"status": "received", "echo": data})
+
+    @app.route('/send_to_other_server', methods=['POST'])
+    def send_to_other_server():
+        import requests
+        # You can change this port to the other instance's port (e.g., 5000 or 5001)
+        other_server_url = request.json.get('url', 'http://localhost:5000/receive_message')
+        payload = request.json.get('payload', {"message": "Hello from this server!"})
+        try:
+            response = requests.post(other_server_url, json=payload, timeout=3)
+            return jsonify({"response_from_other": response.json()})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
     """Create and configure the Flask application"""
     app = Flask(__name__)
     
