@@ -19,22 +19,19 @@ class PokemonDatabase:
         self.init_db()
 
     def init_db(self):
-        """Initialize the database using create.sql and all insert files"""
-        if not os.path.exists(self.db_path):
+        """Initialize the database using create.sql and all insert files, but only if the file does not exist or is empty."""
+        if not os.path.exists(self.db_path) or os.path.getsize(self.db_path) == 0:
             # Get the directory where this service file is located
             service_dir = os.path.dirname(os.path.abspath(__file__))
             database_dir = os.path.dirname(service_dir)  # Go up one level to database/
-            
             with sqlite3.connect(self.db_path) as conn:
                 # First create the tables
                 create_sql_path = os.path.join(database_dir, "create.sql")
                 with open(create_sql_path, "r") as f:
                     sql_script = f.read()
                 conn.executescript(sql_script)
-                
                 # Temporarily disable foreign keys for data insertion
                 conn.execute("PRAGMA foreign_keys = OFF")
-                
                 # Then insert data files individually to handle errors
                 sql_files = [
                     "gen1_pokemon_inserts.sql",  # Pokemon data first
@@ -42,7 +39,6 @@ class PokemonDatabase:
                     "gen1_pokemon_moves_inserts.sql",  # Then pokemon-move relationships
                     "insert.sql"                 # Finally teams and team pokemon
                 ]
-                
                 for sql_file in sql_files:
                     sql_file_path = os.path.join(database_dir, "data", sql_file)
                     if os.path.exists(sql_file_path):
@@ -53,7 +49,6 @@ class PokemonDatabase:
                             print(f"Successfully loaded {sql_file}")
                         except Exception as e:
                             print(f"Warning: Could not load {sql_file}: {e}")
-                                
                 # Re-enable foreign keys
                 conn.execute("PRAGMA foreign_keys = ON")
                 conn.commit()
@@ -388,3 +383,22 @@ class PokemonDatabase:
             conn.row_factory = sqlite3.Row
             cursor = conn.execute("SELECT id, name FROM Pokemon ORDER BY id")
             return [dict(row) for row in cursor.fetchall()]
+    
+    def get_pokemon_by_id(self, poke_id: int) -> Optional[dict]:
+        """
+        Fetch a Pokémon by its pokedex_number or id (for compatibility).
+        Returns a dict with all columns, or None if not found.
+        """
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            # Try pokedex_number first
+            cursor = conn.execute("SELECT * FROM Pokemon WHERE pokedex_number = ?", (poke_id,))
+            row = cursor.fetchone()
+            if row:
+                return dict(row)
+            # Fallback: try id column (if present)
+            cursor = conn.execute("SELECT * FROM Pokemon WHERE id = ?", (poke_id,))
+            row = cursor.fetchone()
+            if row:
+                return dict(row)
+            return None

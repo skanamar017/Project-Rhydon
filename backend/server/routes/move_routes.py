@@ -32,9 +32,10 @@ def get_pokemon_moves(pokemon_id):
     max_level = request.args.get("max_level", type=int)
     move_type = request.args.get("type")
     
-    with sqlite3.connect("pokemon.db") as conn:
+    db = PokemonDatabase()
+    db_path = db.db_path
+    with sqlite3.connect(db_path) as conn:
         conn.row_factory = sqlite3.Row
-        
         query = """
         SELECT 
             pm.move_id,
@@ -52,35 +53,27 @@ def get_pokemon_moves(pokemon_id):
         JOIN Moves m ON pm.move_id = m.id
         WHERE pm.pokemon_id = ?
         """
-        
         params = [pokemon_id]
-        
         if max_level is not None:
             query += " AND (pm.level_learned <= ? OR pm.level_learned = 0)"
             params.append(max_level)
-        
         if move_type == "level-up":
             query += " AND pm.level_learned > 0"
         elif move_type == "tm-hm":
             query += " AND pm.level_learned = 0"
-        
         query += " ORDER BY pm.level_learned, m.name"
-        
         cursor = conn.execute(query, params)
         moves = cursor.fetchall()
-        
         # Get Pokemon name
         pokemon_cursor = conn.execute("SELECT name FROM Pokemon WHERE id = ?", [pokemon_id])
         pokemon_result = pokemon_cursor.fetchone()
         pokemon_name = pokemon_result[0] if pokemon_result else f"Pokemon #{pokemon_id}"
-        
         result = {
             "pokemon_id": pokemon_id,
             "pokemon_name": pokemon_name,
             "filters": {"max_level": max_level, "type": move_type},
             "moves": [dict(move) for move in moves]
         }
-        
         return jsonify(result), 200
 
 @move_bp.route("/Pokemon/<int:pokemon_id>/moves/with_evolutions", methods=["GET"])

@@ -1,4 +1,3 @@
-# Start a battle using two team IDs from the database
 
 # --- Imports ---
 import uuid
@@ -218,3 +217,88 @@ def start_battle_from_teams():
 		'winner': None
 	}
 	return jsonify({'battle_id': battle_id, 'message': 'Battle started from teams.'})
+@battle_routes.route('/battle/simulate', methods=['POST'])
+def simulate_battle():
+	"""
+	Simulate a full 1v1 battle between two Pokémon (no switching, no items, no effects).
+	Request JSON:
+	{
+		"pokemon1": {"id": int, "level": int, "move_id": int},
+		"pokemon2": {"id": int, "level": int, "move_id": int}
+	}
+	Returns: {"log": [...], "winner": 1 or 2}
+	"""
+	from database.database import PokemonDatabase
+	db = PokemonDatabase()
+	data = request.get_json()
+	p1 = data.get('pokemon1')
+	p2 = data.get('pokemon2')
+	if not p1 or not p2:
+		return jsonify({"error": "Both pokemon1 and pokemon2 required."}), 400
+
+	# Fetch Pokémon base stats
+	poke1 = db.get_pokemon_by_id(p1['id'])
+	poke2 = db.get_pokemon_by_id(p2['id'])
+	if not poke1 or not poke2:
+		return jsonify({"error": "Invalid Pokémon id(s)."}), 400
+
+	# Fetch move details
+	move1 = db.get_move_details(p1['move_id'])
+	move2 = db.get_move_details(p2['move_id'])
+	if not move1 or not move2:
+		return jsonify({"error": "Invalid move id(s)."}), 400
+
+	# Use Gen 1 stat formula (no IVs/EVs for simplicity)
+	level1 = p1.get('level', 50)
+	level2 = p2.get('level', 50)
+	hp1 = poke1['base_hp']
+	hp2 = poke2['base_hp']
+	atk1 = poke1['base_attack']
+	atk2 = poke2['base_attack']
+	def1 = poke1['base_defense']
+	def2 = poke2['base_defense']
+	spd1 = poke1['base_speed']
+	spd2 = poke2['base_speed']
+
+	# Gen 1 damage formula (from Bulbapedia, simplified, no crit, no STAB, no type, no random)
+	def calc_damage(level, power, atk, defense):
+		if not power or power == 0:
+			return 0
+		return max(1, (((2 * level // 5 + 2) * power * atk // defense) // 50) + 2)
+
+	log = []
+	turn = 1
+	while hp1 > 0 and hp2 > 0:
+		# Determine order
+		if spd1 > spd2 or (spd1 == spd2 and turn % 2 == 1):
+			# p1 goes first
+			dmg1 = calc_damage(level1, move1.get('power', 0), atk1, def2)
+			hp2 = max(0, hp2 - dmg1)
+			log.append(f"Turn {turn}: {poke1['name']} used {move1['name']}! {poke2['name']} took {dmg1} damage (HP: {hp2}).")
+			if hp2 <= 0:
+				log.append(f"{poke2['name']} fainted! {poke1['name']} wins!")
+				break
+			dmg2 = calc_damage(level2, move2.get('power', 0), atk2, def1)
+			hp1 = max(0, hp1 - dmg2)
+			log.append(f"Turn {turn}: {poke2['name']} used {move2['name']}! {poke1['name']} took {dmg2} damage (HP: {hp1}).")
+			if hp1 <= 0:
+				log.append(f"{poke1['name']} fainted! {poke2['name']} wins!")
+				break
+		else:
+			# p2 goes first
+			dmg2 = calc_damage(level2, move2.get('power', 0), atk2, def1)
+			hp1 = max(0, hp1 - dmg2)
+			log.append(f"Turn {turn}: {poke2['name']} used {move2['name']}! {poke1['name']} took {dmg2} damage (HP: {hp1}).")
+			if hp1 <= 0:
+				log.append(f"{poke1['name']} fainted! {poke2['name']} wins!")
+				break
+			dmg1 = calc_damage(level1, move1.get('power', 0), atk1, def2)
+			hp2 = max(0, hp2 - dmg1)
+			log.append(f"Turn {turn}: {poke1['name']} used {move1['name']}! {poke2['name']} took {dmg1} damage (HP: {hp2}).")
+			if hp2 <= 0:
+				log.append(f"{poke2['name']} fainted! {poke1['name']} wins!")
+				break
+		turn += 1
+	winner = 1 if hp1 > 0 else 2
+	return jsonify({"log": log, "winner": winner})
+# Start a battle using two team IDs from the database

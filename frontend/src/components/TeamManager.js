@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AddPokemonToTeam from './AddPokemonToTeam';
+import TeamPokemonDetails from './TeamPokemonDetails';
 
 function TeamManager() {
   const [teams, setTeams] = useState([]);
@@ -42,11 +43,11 @@ function TeamManager() {
   const handleSelectTeam = (team) => {
     setSelectedTeam(team);
     setLoading(true);
-    fetch(`/Teams/${team.id}`)
+    fetch(`/Teams/${team.id}/TeamPokemon/`)
       .then(res => res.json())
       .then(data => {
-        console.log('Team details response:', data);
-        setTeamPokemon(data.pokemon || []);
+        console.log('TeamPokemon response:', data);
+        setTeamPokemon(Array.isArray(data) ? data : []);
       })
       .catch(() => setError('Failed to load team Pokémon'))
       .finally(() => setLoading(false));
@@ -77,12 +78,16 @@ function TeamManager() {
           <h3>{selectedTeam.name} Details</h3>
           <AddPokemonToTeam teamId={selectedTeam.id} onPokemonAdded={() => handleSelectTeam(selectedTeam)} />
           <h4>Pokémon on Team:</h4>
-          <ul>
-            {teamPokemon.length === 0 && <li>No Pokémon yet.</li>}
-            {teamPokemon.map(p => (
-              <li key={p.id || p.pokemon_id}>{p.pokemon_name}</li>
-            ))}
-          </ul>
+          {teamPokemon.length === 0 && <div>No Pokémon yet.</div>}
+          {teamPokemon.map(p => (
+            <TeamPokemonDetails
+              key={p.id || p.pokemon_id}
+              pokemon={p}
+              teamId={selectedTeam.id}
+              onUpdated={() => handleSelectTeam(selectedTeam)}
+              onDeleted={() => handleSelectTeam(selectedTeam)}
+            />
+          ))}
         </div>
       )}
     </div>

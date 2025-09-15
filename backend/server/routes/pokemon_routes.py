@@ -46,6 +46,7 @@ def get_team_pokemon(team_id, tp_id):
 def get_team_pokemons(team_id):
     db = PokemonDatabase()
     tps = db.get_team_pokemons_by_team_id(team_id)
+    print(f"[DEBUG] /Teams/{team_id}/TeamPokemon/ returns: {tps}")
     return jsonify(tps), 200
 
 @pokemon_bp.route("/<int:team_id>/TeamPokemon/count", methods=["GET"])
